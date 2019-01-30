@@ -16,11 +16,11 @@ message VirtualMachine {
     repeated string ipv6_addresses = 8;
 }
 
-message ProvisionVirtualMashineRequest {
+message ProvisionVirtualMachineRequest {
     string request_id = 1;
     VirtualMachine virtual_machine = 2;
 }
 
 service ProvisionizeService {
-    rpc Provisionize(ProvisionVirtualMashineRequest) returns (Result) {}
+    rpc Provisionize(ProvisionVirtualMachineRequest) returns (Result) {}
 }
