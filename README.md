@@ -1,4 +1,5 @@
-# Zero-Touch-Provisioning for oVirt VMs with Google Cloud DNS
+# provisionize
+Zero touch provisioning for oVirt VMs with Google Cloud DNS integration
 
 ## Install
 
