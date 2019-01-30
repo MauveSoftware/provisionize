@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+message Result {
+    uint32 code = 1;
+    string message = 2;
+}
+
+message VirtualMachine {
+    string id = 1;
+    string name = 2;
+    string cluster_name = 3;
+    string template_name = 4;
+    uint32 memory_mb = 5;
+    uint32 cpu_cores = 6;
+    repeated string ipv4_addresses = 7;
+    repeated string ipv6_addresses = 8;
+}
+
+message ProvisionVirtualMashineRequest {
+    string request_id = 1;
+    VirtualMachine virual_machine = 2;
+}
+
+service ProvisionizeService {
+    rpc Provisionize(ProvisionVirtualMashineRequest) returns (Result) {}
+}
