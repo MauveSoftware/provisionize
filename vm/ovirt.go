@@ -58,8 +58,8 @@ func (s *OvirtService) PerformStep(ctx context.Context, vm *proto.VirtualMachine
 
 func (s *OvirtService) getVMCreateRequest(vm *proto.VirtualMachine) (io.Reader, error) {
 	funcs := template.FuncMap{
-		"mb_to_byte": func(x uint32) uint32 {
-			return x << 20
+		"mb_to_byte": func(x uint32) uint64 {
+			return uint64(x) * (1 << 20)
 		},
 	}
 	tmpl, err := template.New("create-vm").Funcs(funcs).Parse(s.template)
