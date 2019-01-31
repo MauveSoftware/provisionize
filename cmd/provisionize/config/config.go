@@ -2,9 +2,9 @@ package config
 
 // Config represents the configuration
 type Config struct {
-	APIListenAddress string
-	Ovirt            *OvirtConfig
-	GooglecCloudDNS  *GoogleCloudDNSConfig
+	ListenAddress   string
+	Ovirt           *OvirtConfig
+	GooglecCloudDNS *GoogleCloudDNSConfig
 }
 
 // OvirtConfig represents to oVirt configuration part

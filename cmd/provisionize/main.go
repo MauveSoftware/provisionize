@@ -1,4 +1,4 @@
-package provisionize
+package main
 
 import (
 	"fmt"
