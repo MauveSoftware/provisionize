@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 
@@ -11,15 +10,21 @@ import (
 	"github.com/MauveSoftware/provisionize/dns"
 	"github.com/MauveSoftware/provisionize/server"
 	"github.com/MauveSoftware/provisionize/vm"
+	openzipkin "github.com/openzipkin/zipkin-go"
+	zipkinHTTP "github.com/openzipkin/zipkin-go/reporter/http"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+	"go.opencensus.io/exporter/zipkin"
+	"go.opencensus.io/trace"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 const version = "0.1"
 
 var (
-	showVersion = kingpin.Flag("version", "Shows version info").Short('v').Bool()
-	configFile  = kingpin.Flag("config", "Path to config file").Short('c').Default("config.yml").String()
+	showVersion    = kingpin.Flag("version", "Shows version info").Short('v').Bool()
+	configFile     = kingpin.Flag("config", "Path to config file").Short('c').Default("config.yml").String()
+	zipkinEndpoint = kingpin.Flag("zipkin-url", "URL to sent tracing information to").String()
 )
 
 func main() {
@@ -29,6 +34,8 @@ func main() {
 		printVersion()
 		os.Exit(0)
 	}
+
+	initializeZipkin()
 
 	cfg, err := loadConfig()
 	if err != nil {
@@ -76,6 +83,24 @@ func ovirtService(cfg *config.Config) server.ProvisionService {
 
 func googleCloudService(cfg *config.Config) server.ProvisionService {
 	return &dns.GoogleCloudDNSService{}
+}
+
+func initializeZipkin() {
+	if len(*zipkinEndpoint) == 0 {
+		return
+	}
+
+	localEndpoint, err := openzipkin.NewEndpoint("provisionize", ":0")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	reporter := zipkinHTTP.NewReporter(*zipkinEndpoint)
+	exporter := zipkin.NewExporter(reporter, localEndpoint)
+	trace.RegisterExporter(exporter)
+
+	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 }
 
 func printVersion() {
