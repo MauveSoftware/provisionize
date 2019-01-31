@@ -24,7 +24,7 @@ const version = "0.1"
 var (
 	showVersion    = kingpin.Flag("version", "Shows version info").Short('v').Bool()
 	configFile     = kingpin.Flag("config", "Path to config file").Short('c').Default("config.yml").String()
-	zipkinEndpoint = kingpin.Flag("zipkin-url", "URL to sent tracing information to").String()
+	zipkinEndpoint = kingpin.Flag("zipkin-endpoint", "URL to sent tracing information to").String()
 )
 
 func main() {
