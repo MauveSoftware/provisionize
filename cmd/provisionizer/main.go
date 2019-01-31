@@ -49,6 +49,7 @@ func printVersion() {
 	fmt.Println("CLI client for Mauve Provisionize")
 	fmt.Printf("Version: %s\n", version)
 	fmt.Println("Author(s): Daniel Czerwonk")
+	fmt.Println("Copyright: Mauve Mailorder Software, 2019. Licensed under MIT license")
 }
 
 func startProvisioning() error {
