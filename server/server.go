@@ -41,6 +41,8 @@ func (srv *server) Provisionize(ctx context.Context, req *proto.ProvisionVirtual
 	ctx, span := trace.StartSpan(ctx, "API.Provisionize")
 	defer span.End()
 
+	// TODO: sanity checks
+
 	var err error
 	for _, s := range srv.services {
 		err = s.PerformStep(ctx, req.VirtualMachine)
