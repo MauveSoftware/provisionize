@@ -19,15 +19,19 @@ const version = "0.1"
 
 var (
 	showVersion  = kingpin.Flag("version", "Shows version info").Short('v').Bool()
-	apiAddress   = kingpin.Arg("api", "API endpoint of the provisionize service").String()
-	id           = kingpin.Arg("id", "Internal identifier of the VM").String()
-	vmName       = kingpin.Arg("name", "Name of the VM to create").String()
-	clusterName  = kingpin.Arg("cluster", "Name of the cluster the VM should be deployed on").String()
-	templateName = kingpin.Arg("template", "Name of the template to use").String()
-	ipv4         = kingpin.Arg("ipv4", "IPv4 address").IP()
-	ipv6         = kingpin.Arg("ipv6", "IPv6 address").IP()
-	cores        = kingpin.Arg("cores", "Number of CPU cores").Default("4").Uint()
-	memory       = kingpin.Arg("memory", "Memory in MB").Default("1024").Uint()
+	apiAddress   = kingpin.Flag("api", "API endpoint of the provisionize service").Default("[::1]:1337").String()
+	id           = kingpin.Flag("id", "Internal identifier of the VM").String()
+	vmName       = kingpin.Arg("name", "Name of the VM to create").Required().String()
+	clusterName  = kingpin.Flag("cluster", "Name of the cluster the VM should be deployed on").String()
+	templateName = kingpin.Flag("template", "Name of the template to use").String()
+	ipv4         = kingpin.Flag("ipv4", "IPv4 address").IP()
+	ipv6         = kingpin.Flag("ipv6", "IPv6 address").IP()
+	cores        = kingpin.Flag("cores", "Number of CPU cores").Default("4").Uint()
+	memory       = kingpin.Flag("memory", "Memory in MB").Default("1024").Uint()
+	ipv4PfxLen   = kingpin.Flag("ipv4-pfx-len", "Prefix length for IPv4").Default("32").Uint()
+	ipv6PfxLen   = kingpin.Flag("ipv6-pfx-len", "Prefix length for IPv4").Default("128").Uint()
+	ipv4Gateway  = kingpin.Flag("ipv4-gateway", "Gateway IP for IPv4").IP()
+	ipv6Gateway  = kingpin.Flag("ipv6-gateway", "Gateway IP for IPv6").IP()
 )
 
 func main() {
@@ -78,14 +82,22 @@ func requestFromParameters() *proto.ProvisionVirtualMachineRequest {
 	return &proto.ProvisionVirtualMachineRequest{
 		RequestId: uuid.New().String(),
 		VirtualMachine: &proto.VirtualMachine{
-			ClusterName:   *clusterName,
-			CpuCores:      uint32(*cores),
-			Id:            *id,
-			Ipv4Addresses: []string{(*ipv4).String()},
-			Ipv6Addresses: []string{(*ipv6).String()},
-			MemoryMb:      uint32(*memory),
-			Name:          *vmName,
-			TemplateName:  *templateName,
+			ClusterName: *clusterName,
+			CpuCores:    uint32(*cores),
+			Id:          *id,
+			Ipv4: &proto.IPConfig{
+				Address:      (*ipv4).String(),
+				PrefixLength: uint32(*ipv4PfxLen),
+				Gateway:      (*ipv4Gateway).String(),
+			},
+			Ipv6: &proto.IPConfig{
+				Address:      (*ipv6).String(),
+				PrefixLength: uint32(*ipv6PfxLen),
+				Gateway:      (*ipv6Gateway).String(),
+			},
+			MemoryMb:     uint32(*memory),
+			Name:         *vmName,
+			TemplateName: *templateName,
 		},
 	}
 }

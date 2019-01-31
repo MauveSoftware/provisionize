@@ -21,7 +21,7 @@ type OvirtService struct {
 
 // NewService creates a new instance of OvirtService
 func NewService(url, user, pass string, template string) (*OvirtService, error) {
-	client, err := ovirt.NewClient(url, user, pass)
+	client, err := ovirt.NewClient(url, user, pass, ovirt.WithDebug())
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create new oVirt client")
 	}
@@ -44,18 +44,25 @@ func (s *OvirtService) PerformStep(ctx context.Context, vm *proto.VirtualMachine
 		return err
 	}
 
+	log.Infof("Request for VM %s:\n%s", vm.Name, body)
+
 	b, err := s.client.SendRequest("vms?clone=true", "POST", body)
 	if err != nil {
 		return err
 	}
 
-	log.Debugf("Response for VM %s:\n%s", vm.Name, string(b))
+	log.Infof("Response for VM %s:\n%s", vm.Name, string(b))
 
 	return nil
 }
 
 func (s *OvirtService) getVMCreateRequest(vm *proto.VirtualMachine) (io.Reader, error) {
-	tmpl, err := template.New("create-vm").Parse(s.template)
+	funcs := template.FuncMap{
+		"mb_to_byte": func(x uint32) uint32 {
+			return x << 20
+		},
+	}
+	tmpl, err := template.New("create-vm").Funcs(funcs).Parse(s.template)
 	if err != nil {
 		return nil, err
 	}

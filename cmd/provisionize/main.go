@@ -19,7 +19,7 @@ const version = "0.1"
 
 var (
 	showVersion = kingpin.Flag("version", "Shows version info").Short('v').Bool()
-	configFile  = kingpin.Arg("config", "Path to config file").Default("config.yml").String()
+	configFile  = kingpin.Flag("config", "Path to config file").Short('c').Default("config.yml").String()
 )
 
 func main() {

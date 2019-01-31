@@ -1,19 +1,28 @@
 syntax = "proto3";
 
+package proto;
+
 message Result {
     uint32 code = 1;
     string message = 2;
 }
 
+message IPConfig {
+    string address = 1;
+    uint32 prefix_length = 2;
+    string gateway = 3;
+}
+
 message VirtualMachine {
     string id = 1;
     string name = 2;
-    string cluster_name = 3;
-    string template_name = 4;
-    uint32 memory_mb = 5;
-    uint32 cpu_cores = 6;
-    repeated string ipv4_addresses = 7;
-    repeated string ipv6_addresses = 8;
+    string fqdn = 3;
+    string cluster_name = 4;
+    string template_name = 5;
+    uint32 memory_mb = 6;
+    uint32 cpu_cores = 7;
+    IPConfig ipv4 = 8;
+    IPConfig ipv6 = 9;
 }
 
 message ProvisionVirtualMachineRequest {
