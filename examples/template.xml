@@ -1,0 +1,39 @@
+<vm>
+	<name>{{.Name}}</name>
+ 	<cluster>
+		<name>{{.ClusterName}}</name>
+	</cluster>
+	<template>
+		<name>{{.TemplateName}}</name>
+	</template>
+	<disks>
+		<clone>true</clone>
+	</disks>
+	<memory>{{mb_to_byte .MemoryMb}}</memory>
+	<cpu>
+		<topology>
+			<cores>1</cores>
+			<sockets>{{.CpuCores}}</sockets>
+		</topology>
+	</cpu>
+	<initialization>
+		<cloud_init>
+			<host>
+				<address>{{.Name}}</address>
+			</host>
+			<network_configuration>
+				<nics>
+					<nic>
+						<name>ens3</name>
+						<boot_protocol>static</boot_protocol>
+						<network>
+							<ip address="{{.Ipv4.Address}}" netmask="{{.Ipv4.PrefixLength}}" gateway="{{.Ipv4.Gateway}}" />
+							<ip address="{{.Ipv6.Address}}" netmask="{{.Ipv6.PrefixLength}}" gateway="{{.Ipv6.Gateway}}" />
+						</network>
+						<on_boot>true</on_boot>
+					</nic>
+				</nics>
+			</network_configuration>
+		</cloud_init>
+	</initialization>
+</vm>
