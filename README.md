@@ -54,7 +54,7 @@ provisionize -c /etc/provisionize/config.yml
 ```
 
 ## Authors
-[Daniel Czerwonk (Mauve Mailorder Software)]( https://github.com/czerwonk )`
+[Daniel Czerwonk (Mauve Mailorder Software)]( https://github.com/czerwonk )
 
 ## License
 (c) Mauve Mailorder Software, 2019. Licensed under MIT license.
