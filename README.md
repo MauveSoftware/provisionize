@@ -53,8 +53,8 @@ docker run -d --restart=always -v /etc/provisionize/config.yml:/config/config.ym
 provisionize -c /etc/provisionize/config.yml
 ```
 
-# Authors
+## Authors
 [Daniel Czerwonk (Mauve Mailorder Software)]( https://github.com/czerwonk )`
 
-# License
+## License
 (c) Mauve Mailorder Software, 2019. Licensed under MIT license.
