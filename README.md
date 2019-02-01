@@ -39,6 +39,8 @@ gcloud:
   project_id: "123456"
 ```
 
+An example how /etc/provisionize/template can look like can be found in `examples/template.xml`
+
 ### Running in Docker
 Assuming that your config file is located under /etc/provisionize/config.yml and we want to expose the gRPC port 1337:
 
