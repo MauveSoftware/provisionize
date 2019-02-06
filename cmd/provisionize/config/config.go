@@ -2,7 +2,6 @@ package config
 
 import (
 	"io"
-	"io/ioutil"
 
 	yaml "gopkg.in/yaml.v2"
 
@@ -31,13 +30,8 @@ type GoogleCloudDNSConfig struct {
 
 // Load reads a reader and parses the content
 func Load(r io.Reader) (*Config, error) {
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not read from reader")
-	}
-
 	config := &Config{}
-	err = yaml.Unmarshal(b, config)
+	err := yaml.NewDecoder(r).Decode(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "could parse config")
 	}

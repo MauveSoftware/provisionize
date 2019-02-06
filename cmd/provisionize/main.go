@@ -7,9 +7,9 @@ import (
 	"os"
 
 	"github.com/MauveSoftware/provisionize/cmd/provisionize/config"
-	"github.com/MauveSoftware/provisionize/dns"
+	"github.com/MauveSoftware/provisionize/dns/gclouddns"
 	"github.com/MauveSoftware/provisionize/server"
-	"github.com/MauveSoftware/provisionize/vm"
+	"github.com/MauveSoftware/provisionize/vm/ovirt"
 	openzipkin "github.com/openzipkin/zipkin-go"
 	zipkinHTTP "github.com/openzipkin/zipkin-go/reporter/http"
 	"github.com/pkg/errors"
@@ -73,7 +73,7 @@ func ovirtService(cfg *config.Config) server.ProvisionService {
 		log.Fatal(errors.Wrap(err, "could not load template file"))
 	}
 
-	svc, err := vm.NewService(c.URL, c.Username, c.Password, string(template))
+	svc, err := ovirt.NewService(c.URL, c.Username, c.Password, string(template))
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "could initialize oVirt service"))
 	}
@@ -82,7 +82,7 @@ func ovirtService(cfg *config.Config) server.ProvisionService {
 }
 
 func googleCloudService(cfg *config.Config) server.ProvisionService {
-	return &dns.GoogleCloudDNSService{}
+	return &gclouddns.GoogleCloudDNSService{}
 }
 
 func initializeZipkin() {

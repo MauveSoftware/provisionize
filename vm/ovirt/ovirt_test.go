@@ -1,4 +1,4 @@
-package vm
+package ovirt
 
 import (
 	"io/ioutil"
