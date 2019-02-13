@@ -7,7 +7,7 @@ RUN apk --no-cache add ca-certificates bash && \
     mkdir /app
 WORKDIR /app
 COPY --from=builder /go/bin/provisionize .
-CMD ./provisionize --config-file=/config/config.yml --zipkin-endpoint=$ZipkinEndpoint
+CMD ./provisionize --config=/config/config.yml --zipkin-endpoint=$ZipkinEndpoint
 VOLUME /config
 EXPOSE 1337
 EXPOSE 9500
