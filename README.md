@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/MauveSoftware/provisionize.svg)](https://travis-ci.org/MauveSoftware/provisionize)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mauvesoftware/provisionize)](https://goreportcard.com/report/github.com/mauvesoftware/provisionize)
+
 # provisionize
 Zero touch provisioning for oVirt VMs with Google Cloud DNS integration
 
