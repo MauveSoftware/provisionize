@@ -82,7 +82,18 @@ func ovirtService(cfg *config.Config) server.ProvisionService {
 }
 
 func googleCloudService(cfg *config.Config) server.ProvisionService {
-	return &gclouddns.GoogleCloudDNSService{}
+	f, err := os.Open(cfg.GooglecCloudDNS.CredentialsFile)
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "could not load Google Cloud credentials file"))
+	}
+	defer f.Close()
+
+	svc, err := gclouddns.NewDNSService(cfg.GooglecCloudDNS.ProjectID, f)
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "could initialize Google Cloud DNS service"))
+	}
+
+	return svc
 }
 
 func initializeZipkin() {
