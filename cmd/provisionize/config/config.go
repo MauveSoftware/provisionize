@@ -25,7 +25,8 @@ type OvirtConfig struct {
 
 // GoogleCloudDNSConfig represents to DNS configuration part
 type GoogleCloudDNSConfig struct {
-	ProjectID string `yaml:"project_id"`
+	CredentialsFile string `yaml:"credentials_file"`
+	ProjectID       string `yaml:"project_id"`
 }
 
 // Load reads a reader and parses the content

@@ -15,7 +15,8 @@ ovirt:
   password: allTheThings
   template_path: /etc/provisionize/template
 gcloud:
-  project_id: "123456"`
+  credentials_file: "/config/cred.json
+  project_id: "123"`
 	expected := &Config{
 		ListenAddress: "[::]:1337",
 		Ovirt: &OvirtConfig{
@@ -25,7 +26,8 @@ gcloud:
 			URL:          "https://my-ovirt.instance",
 		},
 		GooglecCloudDNS: &GoogleCloudDNSConfig{
-			ProjectID: "123456",
+			CredentialsFile: "/config/cred.json",
+			ProjectID:       "123",
 		},
 	}
 
