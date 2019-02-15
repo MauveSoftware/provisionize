@@ -13,6 +13,8 @@ import (
 	"go.opencensus.io/trace"
 )
 
+const serviceName = "oVirt"
+
 // OvirtService is the service responsible for creating the virtual machine
 type OvirtService struct {
 	template string
@@ -35,35 +37,32 @@ func NewService(url, user, pass string, template string) (*OvirtService, error) 
 }
 
 // PerformStep creates the virtual machine
-func (s *OvirtService) PerformStep(ctx context.Context, vm *proto.VirtualMachine) *proto.StatusUpdate {
+func (s *OvirtService) PerformStep(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
 	ctx, span := trace.StartSpan(ctx, "OvirtService.PerformStep")
 	defer span.End()
 
-	status := &proto.StatusUpdate{
-		ServiceName: "oVirt",
-	}
-
 	body, err := s.getVMCreateRequest(vm)
 	if err != nil {
-		status.Failed = true
-		status.Message = err.Error()
-		return status
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+		return false
 	}
 
 	log.Infof("Request for VM %s:\n%s", vm.Name, body)
 
 	b, err := s.client.SendRequest("vms?clone=true", "POST", body)
 	if err != nil {
-		status.Failed = true
-		status.Message = err.Error()
-		return status
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+		return false
 	}
 
 	log.Infof("Response for VM %s:\n%s", vm.Name, string(b))
-	status.DebugMessage = string(b)
+	ch <- &proto.StatusUpdate{
+		ServiceName:  serviceName,
+		DebugMessage: string(b),
+		Message:      "VM created successfully",
+	}
 
-	status.Message = "Complete"
-	return status
+	return true
 }
 
 func (s *OvirtService) getVMCreateRequest(vm *proto.VirtualMachine) (io.Reader, error) {

@@ -41,19 +41,30 @@ func (srv *server) Provisionize(req *proto.ProvisionVirtualMachineRequest, strea
 
 	// TODO: sanity checks
 
-	for _, s := range srv.services {
-		r := s.PerformStep(ctx, req.VirtualMachine)
-		err := stream.Send(r)
-		if err != nil {
-			log.Errorf("Error while sending update to client: %v", err)
-			return err
-		}
+	done := make(chan bool)
+	updates := make(chan *proto.StatusUpdate)
 
-		if r.Failed {
-			log.Errorf("Error occured while processing #%s: %v", req.RequestId, r.Message)
-			return nil
+	go srv.updateHandler(stream, updates, done)
+
+	for _, s := range srv.services {
+		if !s.PerformStep(ctx, req.VirtualMachine, updates) {
+			break
 		}
 	}
 
+	close(updates)
+	<-done
 	return nil
+}
+
+func (srv *server) updateHandler(stream proto.ProvisionizeService_ProvisionizeServer, updates chan *proto.StatusUpdate,
+	done chan bool) {
+	for update := range updates {
+		err := stream.Send(update)
+		if err != nil {
+			log.Errorf("Error while sending update to client: %v", err)
+		}
+	}
+
+	done <- true
 }

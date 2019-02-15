@@ -1,6 +1,8 @@
 package gclouddns
 
 import (
+	"fmt"
+	"github.com/MauveSoftware/provisionize/api/proto"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/api/dns/v1"
 )
@@ -13,6 +15,7 @@ type zone struct {
 	service   *dns.Service
 	projectID string
 	name      string
+	ch        chan<- *proto.StatusUpdate
 }
 
 func (z *zone) records() ([]*dns.ResourceRecordSet, error) {
@@ -26,7 +29,10 @@ func (z *zone) records() ([]*dns.ResourceRecordSet, error) {
 
 func (z *zone) ensureRecordExists(name, recType, value string, recs []*dns.ResourceRecordSet) error {
 	if z.isInRecordSet(name, recType, recs) {
-		log.Infof("%s record for %s already exists: skipping", recType, name)
+		message := fmt.Sprintf("%s record for %s already exists: skipping", recType, name)
+		log.Infof(message)
+		z.ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: message}
+
 		return nil
 	}
 
@@ -57,5 +63,12 @@ func (z *zone) createRecord(name, recType, value string) error {
 	}
 
 	_, err := z.service.Changes.Create(z.projectID, z.name, change).Do()
+	if err == nil {
+		z.ch <- &proto.StatusUpdate{
+			ServiceName: serviceName,
+			Message:     fmt.Sprintf("Created %s record for %s with value %s in zone %s", recType, name, value, z.name),
+		}
+	}
+
 	return err
 }

@@ -8,5 +8,5 @@ import (
 
 // ProvisionService is a service interface for services participating in a provisioning
 type ProvisionService interface {
-	PerformStep(ctx context.Context, vm *proto.VirtualMachine) *proto.StatusUpdate
+	PerformStep(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool
 }

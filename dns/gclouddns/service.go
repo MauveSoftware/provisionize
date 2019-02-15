@@ -18,6 +18,8 @@ import (
 	"google.golang.org/api/dns/v1"
 )
 
+const serviceName = "Google Cloud DNS"
+
 // GoogleCloudDNSService creates DNS records in Google Cloud DNS
 type GoogleCloudDNSService struct {
 	service   *dns.Service
@@ -49,43 +51,34 @@ func NewDNSService(projectID string, serviceAccountJSON io.Reader) (*GoogleCloud
 }
 
 // PerformStep creates DNS records for the virtual machine
-func (s *GoogleCloudDNSService) PerformStep(ctx context.Context, vm *proto.VirtualMachine) *proto.StatusUpdate {
+func (s *GoogleCloudDNSService) PerformStep(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
 	ctx, span := trace.StartSpan(ctx, "GoogleCloudDNSService.PerformStep")
 	defer span.End()
 
-	status := &proto.StatusUpdate{
-		ServiceName: "Google Cloud DNS",
-		Failed:      false,
-	}
-
 	if len(vm.Fqdn) == 0 {
-		status.Message = "No FQDN defined: skipping DNS record creation"
-		return status
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "No FQDN defined => skipping"}
+		return true
 	}
 
 	zones, err := s.listZones(ctx)
 	if err != nil {
-		status.Failed = true
-		status.Message = err.Error()
-		return status
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+		return false
 	}
 
-	err = s.ensureHostRecordsExists(ctx, vm, zones)
+	err = s.ensureHostRecordsExists(ctx, vm, zones, ch)
 	if err != nil {
-		status.Failed = true
-		status.Message = err.Error()
-		return status
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+		return false
 	}
 
-	err = s.ensurePTRRecordsExists(ctx, vm, zones)
+	err = s.ensurePTRRecordsExists(ctx, vm, zones, ch)
 	if err != nil {
-		status.Failed = true
-		status.Message = err.Error()
-		return status
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+		return false
 	}
 
-	status.Message = "Complete"
-	return status
+	return true
 }
 
 func (s *GoogleCloudDNSService) listZones(ctx context.Context) ([]*dns.ManagedZone, error) {
@@ -100,7 +93,7 @@ func (s *GoogleCloudDNSService) listZones(ctx context.Context) ([]*dns.ManagedZo
 	return resp.ManagedZones, nil
 }
 
-func (s *GoogleCloudDNSService) ensureHostRecordsExists(ctx context.Context, vm *proto.VirtualMachine, zones []*dns.ManagedZone) error {
+func (s *GoogleCloudDNSService) ensureHostRecordsExists(ctx context.Context, vm *proto.VirtualMachine, zones []*dns.ManagedZone, ch chan<- *proto.StatusUpdate) error {
 	ctx, span := trace.StartSpan(ctx, "GoogleCloudDNSService.ensureHostRecordsExists")
 	defer span.End()
 
@@ -112,6 +105,7 @@ func (s *GoogleCloudDNSService) ensureHostRecordsExists(ctx context.Context, vm 
 		name:      managedZone.Name,
 		projectID: s.projectID,
 		service:   s.service,
+		ch:        ch,
 	}
 
 	recs, err := z.records()
@@ -134,17 +128,18 @@ func (s *GoogleCloudDNSService) ensureHostRecordsExists(ctx context.Context, vm 
 	return nil
 }
 
-func (s *GoogleCloudDNSService) ensurePTRRecordsExists(ctx context.Context, vm *proto.VirtualMachine, zones []*dns.ManagedZone) error {
+func (s *GoogleCloudDNSService) ensurePTRRecordsExists(ctx context.Context, vm *proto.VirtualMachine, zones []*dns.ManagedZone,
+	ch chan<- *proto.StatusUpdate) error {
 	ctx, span := trace.StartSpan(ctx, "GoogleCloudDNSService.ensurePTRRecordsExists")
 	defer span.End()
 
 	name := strings.Trim(vm.Fqdn, ".") + "."
-	err := s.ensurePTRRecordExists(vm.Ipv4.Address, name, zones)
+	err := s.ensurePTRRecordExists(vm.Ipv4.Address, name, zones, ch)
 	if err != nil {
 		return errors.Wrap(err, "could not create PTR record for IPv4")
 	}
 
-	err = s.ensurePTRRecordExists(vm.Ipv6.Address, name, zones)
+	err = s.ensurePTRRecordExists(vm.Ipv6.Address, name, zones, ch)
 	if err != nil {
 		return errors.Wrap(err, "could not create PTR record for IPv6")
 	}
@@ -152,7 +147,7 @@ func (s *GoogleCloudDNSService) ensurePTRRecordsExists(ctx context.Context, vm *
 	return nil
 }
 
-func (s *GoogleCloudDNSService) ensurePTRRecordExists(addr string, value string, zones []*dns.ManagedZone) error {
+func (s *GoogleCloudDNSService) ensurePTRRecordExists(addr string, value string, zones []*dns.ManagedZone, ch chan<- *proto.StatusUpdate) error {
 	ip := net.ParseIP(addr)
 	if ip == nil {
 		return fmt.Errorf("could not parse IP %s", ip)
@@ -163,10 +158,11 @@ func (s *GoogleCloudDNSService) ensurePTRRecordExists(addr string, value string,
 	if managedZone == nil {
 		return fmt.Errorf("no zone found for %s", fqdn)
 	}
-	z := zone{
+	z := &zone{
 		name:      managedZone.Name,
 		projectID: s.projectID,
 		service:   s.service,
+		ch:        ch,
 	}
 
 	recs, err := z.records()

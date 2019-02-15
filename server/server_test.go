@@ -12,28 +12,24 @@ import (
 )
 
 type mockService struct {
-	name       string
-	expectCall bool
-	wasCalled  bool
-	err        error
+	name string
+	err  error
 }
 
-func (m *mockService) PerformStep(ctx context.Context, vm *proto.VirtualMachine) *proto.StatusUpdate {
-	m.wasCalled = true
+func (m *mockService) PerformStep(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
 	status := &proto.StatusUpdate{
 		ServiceName: m.name,
 	}
+	result := true
 
 	if m.err != nil {
 		status.Failed = true
 		status.Message = m.err.Error()
+		result = false
 	}
 
-	return status
-}
-
-func (m *mockService) verifyExpectation(t *testing.T) {
-	assert.Equal(t, m.expectCall, m.wasCalled, m.name+" called?")
+	ch <- status
+	return result
 }
 
 type mockStream struct {
@@ -60,12 +56,10 @@ func TestProvisionize(t *testing.T) {
 			name: "2 services",
 			services: []*mockService{
 				&mockService{
-					name:       "service1",
-					expectCall: true,
+					name: "service1",
 				},
 				&mockService{
-					name:       "service2",
-					expectCall: true,
+					name: "service2",
 				},
 			},
 			expectedResult: []*proto.StatusUpdate{
@@ -81,13 +75,11 @@ func TestProvisionize(t *testing.T) {
 			name: "2 services, error on first",
 			services: []*mockService{
 				&mockService{
-					name:       "service1",
-					expectCall: true,
-					err:        fmt.Errorf("test error"),
+					name: "service1",
+					err:  fmt.Errorf("test error"),
 				},
 				&mockService{
-					name:       "service2",
-					expectCall: false,
+					name: "service2",
 				},
 			},
 			expectedResult: []*proto.StatusUpdate{
@@ -102,13 +94,11 @@ func TestProvisionize(t *testing.T) {
 			name: "2 services, error on second",
 			services: []*mockService{
 				&mockService{
-					name:       "service1",
-					expectCall: true,
+					name: "service1",
 				},
 				&mockService{
-					name:       "service2",
-					expectCall: true,
-					err:        fmt.Errorf("test error"),
+					name: "service2",
+					err:  fmt.Errorf("test error"),
 				},
 			},
 			expectedResult: []*proto.StatusUpdate{
@@ -140,10 +130,6 @@ func TestProvisionize(t *testing.T) {
 			err := srv.Provisionize(req, stream)
 			if err != nil {
 				t.Error(err)
-			}
-
-			for _, svc := range test.services {
-				svc.verifyExpectation(t)
 			}
 
 			assert.Equal(t, test.expectedResult, stream.updates)
