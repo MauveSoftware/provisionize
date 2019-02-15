@@ -16,7 +16,7 @@ go get github.com/mauvesoftware/provisionize/cmd/provisionizer
 
 ### Usage
 ```bash
-./provisionizer --id=foo --cluster=cluster1 --cores=2 --memory=2048 --template=ubuntu-18-04 --ipv4=10.2.3.4 --ipv6=2001:678:1e0:f00::1 test-vm
+./provisionizer --id=foo --cluster=cluster1 --fqdn=demo.mauve.cloud --cores=2 --memory=2048 --template=ubuntu-18-04 --ipv4=10.2.3.4 --ipv6=2001:678:1e0:f00::1 test-vm
 ```
 
 ## Server
