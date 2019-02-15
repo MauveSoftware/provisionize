@@ -35,33 +35,35 @@ func NewService(url, user, pass string, template string) (*OvirtService, error) 
 }
 
 // PerformStep creates the virtual machine
-func (s *OvirtService) PerformStep(ctx context.Context, vm *proto.VirtualMachine) *proto.ServiceResult {
+func (s *OvirtService) PerformStep(ctx context.Context, vm *proto.VirtualMachine) *proto.StatusUpdate {
 	ctx, span := trace.StartSpan(ctx, "OvirtService.PerformStep")
 	defer span.End()
 
-	result := &proto.ServiceResult{
-		Name: "oVirt",
+	status := &proto.StatusUpdate{
+		ServiceName: "oVirt",
 	}
 
 	body, err := s.getVMCreateRequest(vm)
 	if err != nil {
-		result.Message = err.Error()
-		return result
+		status.Failed = true
+		status.Message = err.Error()
+		return status
 	}
 
 	log.Infof("Request for VM %s:\n%s", vm.Name, body)
 
 	b, err := s.client.SendRequest("vms?clone=true", "POST", body)
 	if err != nil {
-		result.Message = err.Error()
-		return result
+		status.Failed = true
+		status.Message = err.Error()
+		return status
 	}
 
 	log.Infof("Response for VM %s:\n%s", vm.Name, string(b))
-	result.DebugMessage = string(b)
+	status.DebugMessage = string(b)
 
-	result.Success = true
-	return result
+	status.Message = "Complete"
+	return status
 }
 
 func (s *OvirtService) getVMCreateRequest(vm *proto.VirtualMachine) (io.Reader, error) {

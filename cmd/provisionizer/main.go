@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/google/uuid"
@@ -14,7 +15,7 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
-const version = "0.2"
+const version = "0.3"
 
 var (
 	showVersion  = kingpin.Flag("version", "Shows version info").Short('v').Bool()
@@ -66,29 +67,34 @@ func startProvisioning() error {
 	client := proto.NewProvisionizeServiceClient(conn)
 
 	req := requestFromParameters()
-	res, err := client.Provisionize(context.Background(), req)
+	stream, err := client.Provisionize(context.Background(), req)
 	if err != nil {
 		return errors.Wrap(err, "error on provisionize call")
 	}
 
-	for _, service := range res.ServiceResults {
-		logServiceResult(service)
-	}
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
 
-	if !res.Success {
-		return fmt.Errorf("failed")
-	}
+		if err != nil {
+			return err
+		}
 
-	return nil
+		logServiceResult(in)
+
+		if in.Failed {
+			return fmt.Errorf("failed")
+		}
+	}
 }
 
-func logServiceResult(service *proto.ServiceResult) {
-	log.Println(service.Name)
+func logServiceResult(service *proto.StatusUpdate) {
+	log.Println(service.ServiceName)
 
-	if service.Success {
-		log.Println("Result: success")
-	} else {
-		log.Println("Result: failed")
+	if service.Failed {
+		log.Println("Failed!")
 	}
 
 	if len(service.Message) != 0 {
