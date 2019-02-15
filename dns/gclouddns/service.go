@@ -15,18 +15,11 @@ import (
 	"go.opencensus.io/trace"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/dns/v1"
-
-	log "github.com/sirupsen/logrus"
-)
-
-const (
-	DefaultTTL = 300
 )
 
 type GoogleCloudDNSService struct {
 	service   *dns.Service
 	projectID string
-	ttl       uint32
 }
 
 func NewDNSService(projectID string, serviceAccountJSON io.Reader) (*GoogleCloudDNSService, error) {
@@ -49,7 +42,6 @@ func NewDNSService(projectID string, serviceAccountJSON io.Reader) (*GoogleCloud
 	return &GoogleCloudDNSService{
 		service:   service,
 		projectID: projectID,
-		ttl:       DefaultTTL,
 	}, nil
 }
 
@@ -87,41 +79,46 @@ func (s *GoogleCloudDNSService) ensureHostRecordsExists(ctx context.Context, vm 
 	ctx, span := trace.StartSpan(ctx, "GoogleCloudDNSService.ensureHostRecordsExists")
 	defer span.End()
 
-	z := s.findZoneForFQDN(vm.Fqdn, zones)
-	if z == nil {
+	managedZone := s.findZone(vm.Fqdn, zones)
+	if managedZone == nil {
 		return fmt.Errorf("no zone found for %s", vm.Fqdn)
 	}
+	z := &zone{
+		name:      managedZone.Name,
+		projectID: s.projectID,
+		service:   s.service,
+	}
 
-	recs, err := s.service.ResourceRecordSets.List(s.projectID, z.Name).Do()
+	recs, err := z.records()
 	if err != nil {
-		return errors.Wrapf(err, "could not retrieve record set for zone %s", z.Name)
+		return errors.Wrapf(err, "could not retrieve record set for zone %s", z.name)
 	}
 
 	name := strings.Trim(vm.Fqdn, ".") + "."
 
-	err = s.ensureRecordExists(name, "A", vm.Ipv4.Address, z, recs.Rrsets)
+	err = z.ensureRecordExists(name, "A", vm.Ipv4.Address, recs)
 	if err != nil {
-		return errors.Wrapf(err, "could not create A record for %s in %s", name, z.Name)
+		return errors.Wrapf(err, "could not create A record for %s in %s", name, z.name)
 	}
 
-	err = s.ensureRecordExists(name, "AAAA", vm.Ipv6.Address, z, recs.Rrsets)
+	err = z.ensureRecordExists(name, "AAAA", vm.Ipv6.Address, recs)
 	if err != nil {
-		return errors.Wrapf(err, "could not create AAAA record for %s in %s", name, z.Name)
+		return errors.Wrapf(err, "could not create AAAA record for %s in %s", name, z.name)
 	}
 
 	return nil
 }
 
-func (s *GoogleCloudDNSService) ensureRecordExists(name, recType, value string, zone *dns.ManagedZone, recs []*dns.ResourceRecordSet) error {
-	if s.isInRecordSet(name, recType, recs) {
-		log.Infof("%s record for %s already exists: skipping", recType, name)
-		return nil
-	}
+func (s *GoogleCloudDNSService) ensurePTRRecordExists(ctx context.Context, ip net.IP, value string) error {
+	ctx, span := trace.StartSpan(ctx, "GoogleCloudDNSService.ensurePTRRecordExists")
+	defer span.End()
 
-	return s.createRecord(name, recType, value, zone)
+	// TODO: implement me!
+
+	return nil
 }
 
-func (s *GoogleCloudDNSService) findZoneForFQDN(fqdn string, zones []*dns.ManagedZone) *dns.ManagedZone {
+func (s *GoogleCloudDNSService) findZone(fqdn string, zones []*dns.ManagedZone) *dns.ManagedZone {
 	reverseFQDN := utils.ReverseString(fqdn)
 
 	var best *dns.ManagedZone
@@ -136,44 +133,4 @@ func (s *GoogleCloudDNSService) findZoneForFQDN(fqdn string, zones []*dns.Manage
 	}
 
 	return best
-}
-
-func (s *GoogleCloudDNSService) ensurePTRRecordExists(ctx context.Context, ip net.IP, value string) error {
-	ctx, span := trace.StartSpan(ctx, "GoogleCloudDNSService.ensurePTRRecordExists")
-	defer span.End()
-
-	// TODO: implement me!
-
-	return nil
-}
-
-func (s *GoogleCloudDNSService) findZoneForIP(ip net.IP, zones []*dns.ManagedZone) *dns.ManagedZone {
-	return nil
-}
-
-func (s *GoogleCloudDNSService) isInRecordSet(name, recType string, recs []*dns.ResourceRecordSet) bool {
-	for _, rec := range recs {
-		if rec.Type == recType && rec.Name == name {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (s *GoogleCloudDNSService) createRecord(name, recType, value string, zone *dns.ManagedZone) error {
-	log.Infof("Creating %s record for %s with value %s", recType, name, value)
-	change := &dns.Change{
-		Additions: []*dns.ResourceRecordSet{
-			&dns.ResourceRecordSet{
-				Type:    recType,
-				Name:    name,
-				Ttl:     int64(s.ttl),
-				Rrdatas: []string{value},
-			},
-		},
-	}
-
-	_, err := s.service.Changes.Create(s.projectID, zone.Name, change).Do()
-	return err
 }

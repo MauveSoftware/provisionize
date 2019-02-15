@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestFindZoneForFQDN(t *testing.T) {
+func TestFindZone(t *testing.T) {
 	tests := []struct {
 		name          string
 		fqdn          string
@@ -54,7 +54,7 @@ func TestFindZoneForFQDN(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			service := &GoogleCloudDNSService{}
-			z := service.findZoneForFQDN(test.fqdn, test.zones)
+			z := service.findZone(test.fqdn, test.zones)
 
 			if test.expectMatch {
 				assert.Exactly(t, test.zones[test.expectedIndex], z)
