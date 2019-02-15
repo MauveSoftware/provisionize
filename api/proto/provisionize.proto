@@ -2,17 +2,11 @@ syntax = "proto3";
 
 package proto;
 
-message Result {
-    bool success = 1;
-    string message = 3;
-    repeated ServiceResult serviceResults = 2;
-}
-
-message ServiceResult {
-    string name = 1;
-    bool success = 2;
-    string message = 3;
-    string debugMessage = 4;
+message StatusUpdate {
+    string service_name = 1;
+    string message = 2;
+    string debugMessage = 3;
+    bool failed = 4;
 }
 
 message IPConfig {
@@ -39,5 +33,5 @@ message ProvisionVirtualMachineRequest {
 }
 
 service ProvisionizeService {
-    rpc Provisionize(ProvisionVirtualMachineRequest) returns (Result) {}
+    rpc Provisionize(ProvisionVirtualMachineRequest) returns (stream StatusUpdate) {}
 }

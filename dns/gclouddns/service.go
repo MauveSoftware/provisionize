@@ -49,40 +49,43 @@ func NewDNSService(projectID string, serviceAccountJSON io.Reader) (*GoogleCloud
 }
 
 // PerformStep creates DNS records for the virtual machine
-func (s *GoogleCloudDNSService) PerformStep(ctx context.Context, vm *proto.VirtualMachine) *proto.ServiceResult {
+func (s *GoogleCloudDNSService) PerformStep(ctx context.Context, vm *proto.VirtualMachine) *proto.StatusUpdate {
 	ctx, span := trace.StartSpan(ctx, "GoogleCloudDNSService.PerformStep")
 	defer span.End()
 
-	result := &proto.ServiceResult{
-		Name: "Google Cloud DNS",
+	status := &proto.StatusUpdate{
+		ServiceName: "Google Cloud DNS",
+		Failed:      false,
 	}
 
 	if len(vm.Fqdn) == 0 {
-		result.Success = true
-		result.Message = "No FQDN defined: skipping DNS record creation"
-		return result
+		status.Message = "No FQDN defined: skipping DNS record creation"
+		return status
 	}
 
 	zones, err := s.listZones(ctx)
 	if err != nil {
-		result.Message = err.Error()
-		return result
+		status.Failed = true
+		status.Message = err.Error()
+		return status
 	}
 
 	err = s.ensureHostRecordsExists(ctx, vm, zones)
 	if err != nil {
-		result.Message = err.Error()
-		return result
+		status.Failed = true
+		status.Message = err.Error()
+		return status
 	}
 
 	err = s.ensurePTRRecordsExists(ctx, vm, zones)
 	if err != nil {
-		result.Message = err.Error()
-		return result
+		status.Failed = true
+		status.Message = err.Error()
+		return status
 	}
 
-	result.Success = true
-	return result
+	status.Message = "Complete"
+	return status
 }
 
 func (s *GoogleCloudDNSService) listZones(ctx context.Context) ([]*dns.ManagedZone, error) {

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"net"
 
 	"github.com/MauveSoftware/provisionize/api/proto"
@@ -35,27 +34,26 @@ func StartServer(conn net.Listener, services []ProvisionService) error {
 	return nil
 }
 
-func (srv *server) Provisionize(ctx context.Context, req *proto.ProvisionVirtualMachineRequest) (*proto.Result, error) {
+func (srv *server) Provisionize(req *proto.ProvisionVirtualMachineRequest, stream proto.ProvisionizeService_ProvisionizeServer) error {
 	log.Info("Received Provisionize request:", req)
-	ctx, span := trace.StartSpan(ctx, "API.Provisionize")
+	ctx, span := trace.StartSpan(stream.Context(), "API.Provisionize")
 	defer span.End()
 
 	// TODO: sanity checks
 
-	result := &proto.Result{
-		ServiceResults: make([]*proto.ServiceResult, 0),
-	}
-
 	for _, s := range srv.services {
 		r := s.PerformStep(ctx, req.VirtualMachine)
-		result.ServiceResults = append(result.ServiceResults, r)
+		err := stream.Send(r)
+		if err != nil {
+			log.Errorf("Error while sending update to client: %v", err)
+			return err
+		}
 
-		if !r.Success {
+		if r.Failed {
 			log.Errorf("Error occured while processing #%s: %v", req.RequestId, r.Message)
-			return result, nil
+			return nil
 		}
 	}
 
-	result.Success = true
-	return result, nil
+	return nil
 }

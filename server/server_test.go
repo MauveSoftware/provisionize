@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,25 +18,43 @@ type mockService struct {
 	err        error
 }
 
-func (m *mockService) PerformStep(ctx context.Context, vm *proto.VirtualMachine) *proto.ServiceResult {
+func (m *mockService) PerformStep(ctx context.Context, vm *proto.VirtualMachine) *proto.StatusUpdate {
 	m.wasCalled = true
-
-	if m.err != nil {
-		return &proto.ServiceResult{Success: false, Message: m.err.Error(), Name: m.name}
+	status := &proto.StatusUpdate{
+		ServiceName: m.name,
 	}
 
-	return &proto.ServiceResult{Success: true, Name: m.name}
+	if m.err != nil {
+		status.Failed = true
+		status.Message = m.err.Error()
+	}
+
+	return status
 }
 
 func (m *mockService) verifyExpectation(t *testing.T) {
 	assert.Equal(t, m.expectCall, m.wasCalled, m.name+" called?")
 }
 
+type mockStream struct {
+	grpc.ServerStream
+	updates []*proto.StatusUpdate
+}
+
+func (s *mockStream) Send(update *proto.StatusUpdate) error {
+	s.updates = append(s.updates, update)
+	return nil
+}
+
+func (s *mockStream) Context() context.Context {
+	return context.Background()
+}
+
 func TestProvisionize(t *testing.T) {
 	tests := []struct {
 		name           string
 		services       []*mockService
-		expectedResult *proto.Result
+		expectedResult []*proto.StatusUpdate
 	}{
 		{
 			name: "2 services",
@@ -49,17 +68,12 @@ func TestProvisionize(t *testing.T) {
 					expectCall: true,
 				},
 			},
-			expectedResult: &proto.Result{
-				Success: true,
-				ServiceResults: []*proto.ServiceResult{
-					{
-						Name:    "service1",
-						Success: true,
-					},
-					{
-						Name:    "service2",
-						Success: true,
-					},
+			expectedResult: []*proto.StatusUpdate{
+				{
+					ServiceName: "service1",
+				},
+				{
+					ServiceName: "service2",
 				},
 			},
 		},
@@ -76,14 +90,11 @@ func TestProvisionize(t *testing.T) {
 					expectCall: false,
 				},
 			},
-			expectedResult: &proto.Result{
-				Success: false,
-				ServiceResults: []*proto.ServiceResult{
-					{
-						Name:    "service1",
-						Success: false,
-						Message: "test error",
-					},
+			expectedResult: []*proto.StatusUpdate{
+				{
+					ServiceName: "service1",
+					Failed:      true,
+					Message:     "test error",
 				},
 			},
 		},
@@ -100,18 +111,14 @@ func TestProvisionize(t *testing.T) {
 					err:        fmt.Errorf("test error"),
 				},
 			},
-			expectedResult: &proto.Result{
-				Success: false,
-				ServiceResults: []*proto.ServiceResult{
-					{
-						Name:    "service1",
-						Success: true,
-					},
-					{
-						Name:    "service2",
-						Success: false,
-						Message: "test error",
-					},
+			expectedResult: []*proto.StatusUpdate{
+				{
+					ServiceName: "service1",
+				},
+				{
+					ServiceName: "service2",
+					Failed:      true,
+					Message:     "test error",
 				},
 			},
 		},
@@ -129,7 +136,8 @@ func TestProvisionize(t *testing.T) {
 			}
 
 			req := &proto.ProvisionVirtualMachineRequest{}
-			res, err := srv.Provisionize(context.Background(), req)
+			stream := &mockStream{}
+			err := srv.Provisionize(req, stream)
 			if err != nil {
 				t.Error(err)
 			}
@@ -138,7 +146,7 @@ func TestProvisionize(t *testing.T) {
 				svc.verifyExpectation(t)
 			}
 
-			assert.Equal(t, test.expectedResult, res)
+			assert.Equal(t, test.expectedResult, stream.updates)
 		})
 	}
 }
