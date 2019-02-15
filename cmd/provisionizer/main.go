@@ -33,6 +33,7 @@ var (
 	ipv6PfxLen   = kingpin.Flag("ipv6-pfx-len", "Prefix length for IPv4").Default("128").Uint()
 	ipv4Gateway  = kingpin.Flag("ipv4-gateway", "Gateway IP for IPv4").IP()
 	ipv6Gateway  = kingpin.Flag("ipv6-gateway", "Gateway IP for IPv6").IP()
+	debug        = kingpin.Flag("debug", "Print debug information recevied from server").Bool()
 )
 
 func main() {
@@ -94,11 +95,16 @@ func logServiceResult(service *proto.StatusUpdate) {
 	log.Println(service.ServiceName)
 
 	if service.Failed {
-		log.Println("Failed!")
+		log.Println("!!! Failed !!!")
 	}
 
 	if len(service.Message) != 0 {
-		log.Printf("Message: %s\n", service.Message)
+		log.Println(service.Message)
+	}
+
+	if len(service.DebugMessage) != 0 {
+		log.Println("Debug:")
+		log.Println(service.DebugMessage)
 	}
 
 	log.Println()
