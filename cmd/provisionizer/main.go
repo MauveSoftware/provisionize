@@ -23,7 +23,7 @@ var (
 	vmName       = kingpin.Arg("name", "Name of the VM to create").Required().String()
 	clusterName  = kingpin.Flag("cluster", "Name of the cluster the VM should be deployed on").String()
 	templateName = kingpin.Flag("template", "Name of the template to use").String()
-	fqdn         = kingpin.Flag("fqdn", "Full qualified domain name of the VM").Required().Default("").String()
+	fqdn         = kingpin.Flag("fqdn", "Full qualified domain name of the VM").Default("").String()
 	ipv4         = kingpin.Flag("ipv4", "IPv4 address").IP()
 	ipv6         = kingpin.Flag("ipv6", "IPv6 address").IP()
 	cores        = kingpin.Flag("cores", "Number of CPU cores").Default("4").Uint()
