@@ -4,7 +4,6 @@ import (
 	"context"
 	"net"
 
-	"github.com/MauveSoftware/provisionize/api"
 	"github.com/MauveSoftware/provisionize/api/proto"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
@@ -43,17 +42,20 @@ func (srv *server) Provisionize(ctx context.Context, req *proto.ProvisionVirtual
 
 	// TODO: sanity checks
 
-	var err error
+	result := &proto.Result{
+		ServiceResults: make([]*proto.ServiceResult, 0),
+	}
+
 	for _, s := range srv.services {
-		err = s.PerformStep(ctx, req.VirtualMachine)
-		if err != nil {
-			log.Errorf("Error occured while processing #%s: %v", req.RequestId, err)
-			return &proto.Result{
-				Code:    api.StatusCodeProcessingError,
-				Message: err.Error(),
-			}, nil
+		r := s.PerformStep(ctx, req.VirtualMachine)
+		result.ServiceResults = append(result.ServiceResults, r)
+
+		if !r.Success {
+			log.Errorf("Error occured while processing #%s: %v", req.RequestId, r.Message)
+			return result, nil
 		}
 	}
 
-	return &proto.Result{Code: api.StatusCodeOK}, nil
+	result.Success = true
+	return result, nil
 }

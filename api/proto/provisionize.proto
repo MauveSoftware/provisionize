@@ -3,8 +3,16 @@ syntax = "proto3";
 package proto;
 
 message Result {
-    uint32 code = 1;
-    string message = 2;
+    bool success = 1;
+    string message = 3;
+    repeated ServiceResult serviceResults = 2;
+}
+
+message ServiceResult {
+    string name = 1;
+    bool success = 2;
+    string message = 3;
+    string debugMessage = 4;
 }
 
 message IPConfig {

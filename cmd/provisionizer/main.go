@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/MauveSoftware/provisionize/api"
 	"github.com/MauveSoftware/provisionize/api/proto"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -24,6 +23,7 @@ var (
 	vmName       = kingpin.Arg("name", "Name of the VM to create").Required().String()
 	clusterName  = kingpin.Flag("cluster", "Name of the cluster the VM should be deployed on").String()
 	templateName = kingpin.Flag("template", "Name of the template to use").String()
+	fqdn         = kingpin.Flag("fqdn", "Full qualified domain name of the VM").Required().Default("").String()
 	ipv4         = kingpin.Flag("ipv4", "IPv4 address").IP()
 	ipv6         = kingpin.Flag("ipv6", "IPv6 address").IP()
 	cores        = kingpin.Flag("cores", "Number of CPU cores").Default("4").Uint()
@@ -71,11 +71,31 @@ func startProvisioning() error {
 		return errors.Wrap(err, "error on provisionize call")
 	}
 
-	if res.Code != api.StatusCodeOK {
-		return fmt.Errorf("error: %s", res.Message)
+	for _, service := range res.ServiceResults {
+		logServiceResult(service)
+	}
+
+	if !res.Success {
+		return fmt.Errorf("failed")
 	}
 
 	return nil
+}
+
+func logServiceResult(service *proto.ServiceResult) {
+	log.Println(service.Name)
+
+	if service.Success {
+		log.Println("Result: success")
+	} else {
+		log.Println("Result: failed")
+	}
+
+	if len(service.Message) != 0 {
+		log.Printf("Message: %s\n", service.Message)
+	}
+
+	log.Println()
 }
 
 func requestFromParameters() *proto.ProvisionVirtualMachineRequest {
@@ -85,6 +105,7 @@ func requestFromParameters() *proto.ProvisionVirtualMachineRequest {
 			ClusterName: *clusterName,
 			CpuCores:    uint32(*cores),
 			Id:          *id,
+			Fqdn:        *fqdn,
 			Ipv4: &proto.IPConfig{
 				Address:      (*ipv4).String(),
 				PrefixLength: uint32(*ipv4PfxLen),

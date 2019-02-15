@@ -18,11 +18,13 @@ import (
 	"google.golang.org/api/dns/v1"
 )
 
+// GoogleCloudDNSService creates DNS records in Google Cloud DNS
 type GoogleCloudDNSService struct {
 	service   *dns.Service
 	projectID string
 }
 
+// NewDNSService creates a new instance of GoogleCloudDNSService
 func NewDNSService(projectID string, serviceAccountJSON io.Reader) (*GoogleCloudDNSService, error) {
 	b, err := ioutil.ReadAll(serviceAccountJSON)
 	if err != nil {
@@ -47,26 +49,40 @@ func NewDNSService(projectID string, serviceAccountJSON io.Reader) (*GoogleCloud
 }
 
 // PerformStep creates DNS records for the virtual machine
-func (s *GoogleCloudDNSService) PerformStep(ctx context.Context, vm *proto.VirtualMachine) error {
+func (s *GoogleCloudDNSService) PerformStep(ctx context.Context, vm *proto.VirtualMachine) *proto.ServiceResult {
 	ctx, span := trace.StartSpan(ctx, "GoogleCloudDNSService.PerformStep")
 	defer span.End()
 
+	result := &proto.ServiceResult{
+		Name: "Google Cloud DNS",
+	}
+
+	if len(vm.Fqdn) == 0 {
+		result.Success = true
+		result.Message = "No FQDN defined: skipping DNS record creation"
+		return result
+	}
+
 	zones, err := s.listZones(ctx)
 	if err != nil {
-		return err
+		result.Message = err.Error()
+		return result
 	}
 
 	err = s.ensureHostRecordsExists(ctx, vm, zones)
 	if err != nil {
-		return err
+		result.Message = err.Error()
+		return result
 	}
 
 	err = s.ensurePTRRecordsExists(ctx, vm, zones)
 	if err != nil {
-		return err
+		result.Message = err.Error()
+		return result
 	}
 
-	return err
+	result.Success = true
+	return result
 }
 
 func (s *GoogleCloudDNSService) listZones(ctx context.Context) ([]*dns.ManagedZone, error) {
