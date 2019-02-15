@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/MauveSoftware/provisionize/api"
 	"github.com/MauveSoftware/provisionize/api/proto"
 )
 
@@ -18,9 +17,14 @@ type mockService struct {
 	err        error
 }
 
-func (m *mockService) PerformStep(ctx context.Context, vm *proto.VirtualMachine) error {
+func (m *mockService) PerformStep(ctx context.Context, vm *proto.VirtualMachine) *proto.ServiceResult {
 	m.wasCalled = true
-	return m.err
+
+	if m.err != nil {
+		return &proto.ServiceResult{Success: false, Message: m.err.Error(), Name: m.name}
+	}
+
+	return &proto.ServiceResult{Success: true, Name: m.name}
 }
 
 func (m *mockService) verifyExpectation(t *testing.T) {
@@ -45,7 +49,19 @@ func TestProvisionize(t *testing.T) {
 					expectCall: true,
 				},
 			},
-			expectedResult: &proto.Result{Code: api.StatusCodeOK},
+			expectedResult: &proto.Result{
+				Success: true,
+				ServiceResults: []*proto.ServiceResult{
+					{
+						Name:    "service1",
+						Success: true,
+					},
+					{
+						Name:    "service2",
+						Success: true,
+					},
+				},
+			},
 		},
 		{
 			name: "2 services, error on first",
@@ -60,7 +76,16 @@ func TestProvisionize(t *testing.T) {
 					expectCall: false,
 				},
 			},
-			expectedResult: &proto.Result{Code: api.StatusCodeProcessingError, Message: "test error"},
+			expectedResult: &proto.Result{
+				Success: false,
+				ServiceResults: []*proto.ServiceResult{
+					{
+						Name:    "service1",
+						Success: false,
+						Message: "test error",
+					},
+				},
+			},
 		},
 		{
 			name: "2 services, error on second",
@@ -75,7 +100,20 @@ func TestProvisionize(t *testing.T) {
 					err:        fmt.Errorf("test error"),
 				},
 			},
-			expectedResult: &proto.Result{Code: api.StatusCodeProcessingError, Message: "test error"},
+			expectedResult: &proto.Result{
+				Success: false,
+				ServiceResults: []*proto.ServiceResult{
+					{
+						Name:    "service1",
+						Success: true,
+					},
+					{
+						Name:    "service2",
+						Success: false,
+						Message: "test error",
+					},
+				},
+			},
 		},
 	}
 
