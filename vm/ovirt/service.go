@@ -61,11 +61,10 @@ func (s *OvirtService) PerformStep(ctx context.Context, vm *proto.VirtualMachine
 		return false
 	}
 
-	if !s.waitForVMProvisioningFinished(v.ID, ch) {
-		return false
-	}
-
-	return s.startVM(v.ID, ch)
+	ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "Waiting for VM initialization to complete"}
+	return s.waitForVMStatus(v.ID, "down", ch) &&
+		s.startVM(v.ID, ch) &&
+		s.waitForVMStatus(v.ID, "up", ch)
 }
 
 func (s *OvirtService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) ([]byte, error) {
@@ -112,9 +111,7 @@ func (s *OvirtService) getVMCreateRequest(vm *proto.VirtualMachine) (*bytes.Buff
 	return w, err
 }
 
-func (s *OvirtService) waitForVMProvisioningFinished(id string, ch chan<- *proto.StatusUpdate) bool {
-	ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "Waiting for VM initialization to complete"}
-
+func (s *OvirtService) waitForVMStatus(id string, desiredStatus string, ch chan<- *proto.StatusUpdate) bool {
 	currentStatus := ""
 
 	for {
@@ -135,7 +132,7 @@ func (s *OvirtService) waitForVMProvisioningFinished(id string, ch chan<- *proto
 				currentStatus = vm.Status
 			}
 
-			if vm.Status == "down" {
+			if vm.Status == desiredStatus {
 				return true
 			}
 		}
