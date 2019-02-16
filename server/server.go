@@ -42,6 +42,8 @@ func (srv *server) Provisionize(req *proto.ProvisionVirtualMachineRequest, strea
 	// TODO: sanity checks
 
 	done := make(chan bool)
+	defer close(done)
+
 	updates := make(chan *proto.StatusUpdate)
 
 	go srv.updateHandler(stream, updates, done)
