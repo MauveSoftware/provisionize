@@ -106,7 +106,7 @@ func logServiceResult(service *proto.StatusUpdate) {
 		log.Println(service.Message)
 	}
 
-	if len(service.DebugMessage) != 0 {
+	if *debug && len(service.DebugMessage) != 0 {
 		log.Println("Debug:")
 		log.Println(service.DebugMessage)
 	}

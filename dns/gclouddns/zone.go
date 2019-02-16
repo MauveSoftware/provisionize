@@ -1,6 +1,7 @@
 package gclouddns
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/MauveSoftware/provisionize/api/proto"
 	log "github.com/sirupsen/logrus"
@@ -30,7 +31,7 @@ func (z *zone) records() ([]*dns.ResourceRecordSet, error) {
 func (z *zone) ensureRecordExists(name, recType, value string, recs []*dns.ResourceRecordSet) error {
 	if z.isInRecordSet(name, recType, recs) {
 		message := fmt.Sprintf("%s record for %s already exists: skipping", recType, name)
-		log.Infof(message)
+		log.Info(message)
 		z.ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: message}
 
 		return nil
@@ -51,22 +52,25 @@ func (z *zone) isInRecordSet(name, recType string, recs []*dns.ResourceRecordSet
 
 func (z *zone) createRecord(name, recType, value string) error {
 	log.Infof("Creating %s record for %s with value %s", recType, name, value)
-	change := &dns.Change{
-		Additions: []*dns.ResourceRecordSet{
-			&dns.ResourceRecordSet{
-				Type:    recType,
-				Name:    name,
-				Ttl:     int64(defaultTTL),
-				Rrdatas: []string{value},
-			},
-		},
+
+	record := &dns.ResourceRecordSet{
+		Type:    recType,
+		Name:    name,
+		Ttl:     int64(defaultTTL),
+		Rrdatas: []string{value},
 	}
 
-	_, err := z.service.Changes.Create(z.projectID, z.name, change).Do()
+	change := &dns.Change{
+		Additions: []*dns.ResourceRecordSet{record},
+	}
+
+	c, err := z.service.Changes.Create(z.projectID, z.name, change).Do()
 	if err == nil {
+		b, _ := json.Marshal(c)
 		z.ch <- &proto.StatusUpdate{
-			ServiceName: serviceName,
-			Message:     fmt.Sprintf("Created %s record for %s with value %s in zone %s", recType, name, value, z.name),
+			ServiceName:  serviceName,
+			Message:      fmt.Sprintf("Created: %s\t%d\t%s\t%s", record.Name, record.Ttl, record.Type, record.Rrdatas[0]),
+			DebugMessage: string(b),
 		}
 	}
 

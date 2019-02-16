@@ -3,7 +3,6 @@ package ovirt
 import (
 	"bytes"
 	"context"
-	"io"
 	"text/template"
 
 	"github.com/MauveSoftware/provisionize/api/proto"
@@ -48,6 +47,11 @@ func (s *OvirtService) PerformStep(ctx context.Context, vm *proto.VirtualMachine
 	}
 
 	log.Infof("Request for VM %s:\n%s", vm.Name, body)
+	ch <- &proto.StatusUpdate{
+		ServiceName:  serviceName,
+		DebugMessage: body.String(),
+		Message:      "Start creating VM",
+	}
 
 	b, err := s.client.SendRequest("vms?clone=true", "POST", body)
 	if err != nil {
@@ -65,7 +69,7 @@ func (s *OvirtService) PerformStep(ctx context.Context, vm *proto.VirtualMachine
 	return true
 }
 
-func (s *OvirtService) getVMCreateRequest(vm *proto.VirtualMachine) (io.Reader, error) {
+func (s *OvirtService) getVMCreateRequest(vm *proto.VirtualMachine) (*bytes.Buffer, error) {
 	funcs := template.FuncMap{
 		"mb_to_byte": func(x uint32) uint64 {
 			return uint64(x) * (1 << 20)
