@@ -15,7 +15,7 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
-const version = "0.3"
+const version = "0.3.1"
 
 var (
 	showVersion  = kingpin.Flag("version", "Shows version info").Short('v').Bool()
@@ -44,9 +44,13 @@ func main() {
 		os.Exit(0)
 	}
 
-	err := startProvisioning()
+	success, err := startProvisioning()
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if !success {
+		os.Exit(1)
 	}
 }
 
@@ -58,10 +62,10 @@ func printVersion() {
 	fmt.Println("Copyright: Mauve Mailorder Software, 2019. Licensed under MIT license")
 }
 
-func startProvisioning() error {
+func startProvisioning() (bool, error) {
 	conn, err := grpc.Dial(*apiAddress, grpc.WithInsecure())
 	if err != nil {
-		return errors.Wrap(err, "could not connect to service")
+		return false, errors.Wrap(err, "could not connect to service")
 	}
 	defer conn.Close()
 
@@ -70,23 +74,23 @@ func startProvisioning() error {
 	req := requestFromParameters()
 	stream, err := client.Provisionize(context.Background(), req)
 	if err != nil {
-		return errors.Wrap(err, "error on provisionize call")
+		return false, errors.Wrap(err, "error on provisionize call")
 	}
 
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
-			return nil
+			return true, nil
 		}
 
 		if err != nil {
-			return err
+			return false, err
 		}
 
 		logServiceResult(in)
 
 		if in.Failed {
-			return fmt.Errorf("failed")
+			return false, nil
 		}
 	}
 }
@@ -95,7 +99,7 @@ func logServiceResult(service *proto.StatusUpdate) {
 	log.Println(service.ServiceName)
 
 	if service.Failed {
-		log.Println("!!! Failed !!!")
+		log.Println("Failed!")
 	}
 
 	if len(service.Message) != 0 {
