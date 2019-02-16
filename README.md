@@ -40,6 +40,7 @@ ovirt:
   template_path: /etc/provisionize/template
 gcloud:
   project_id: "123456"
+  credentials_file: "/path/to/service-account/file"
 ```
 
 An example how /etc/provisionize/template can look like can be found in `examples/template.xml`
