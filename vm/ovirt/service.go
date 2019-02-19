@@ -43,8 +43,8 @@ func NewService(url, user, pass string, template string) (*OvirtService, error) 
 	return svc, nil
 }
 
-// PerformStep creates the virtual machine
-func (s *OvirtService) PerformStep(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
+// Provision creates the virtual machine
+func (s *OvirtService) Provision(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
 	ctx, span := trace.StartSpan(ctx, "OvirtService.PerformStep")
 	defer span.End()
 

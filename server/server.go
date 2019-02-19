@@ -49,7 +49,7 @@ func (srv *server) Provisionize(req *proto.ProvisionVirtualMachineRequest, strea
 	go srv.updateHandler(stream, updates, done)
 
 	for _, s := range srv.services {
-		if !s.PerformStep(ctx, req.VirtualMachine, updates) {
+		if !s.Provision(ctx, req.VirtualMachine, updates) {
 			break
 		}
 	}
