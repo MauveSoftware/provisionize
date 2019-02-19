@@ -83,8 +83,8 @@ func (s *TowerService) startJob(fqdn string, templateID uint, ch chan<- *proto.S
 }
 
 func (s *TowerService) postStartRequest(fqdn string, templateID uint, ch chan<- *proto.StatusUpdate) (job *Job, debugInfo string, err error) {
-	body := fmt.Sprintf(`{limit="%s"}`, fqdn)
-	url := fmt.Sprintf("%s/job_templates/%d/launch", s.baseURL, templateID)
+	body := fmt.Sprintf(`{"limit": "%s"}`, fqdn)
+	url := fmt.Sprintf("%s/job_templates/%d/launch/", s.baseURL, templateID)
 
 	ch <- &proto.StatusUpdate{
 		Message:      fmt.Sprintf("Starting Job with template %d", templateID),
@@ -127,10 +127,6 @@ func (s *TowerService) waitForJobToComplete(job *Job, ch chan<- *proto.StatusUpd
 				return d, errors.Wrap(err, "could not get job status update")
 			}
 
-			if j.Status == "successfull" {
-				return d, nil
-			}
-
 			if status != j.Status {
 				status = j.Status
 				ch <- &proto.StatusUpdate{
@@ -138,6 +134,14 @@ func (s *TowerService) waitForJobToComplete(job *Job, ch chan<- *proto.StatusUpd
 					ServiceName:  serviceName,
 					DebugMessage: d,
 				}
+			}
+
+			if j.Status == "successfull" {
+				return d, nil
+			}
+
+			if j.Status == "failed" {
+				return d, errors.New("Failed running playbook")
 			}
 		}
 	}
@@ -151,12 +155,12 @@ func (s *TowerService) getJobUpdate(id uint) (job *Job, debugMessage string, err
 		return
 	}
 
+	debugMessage = string(b)
+
 	if status != http.StatusOK {
 		err = fmt.Errorf("could not get status update for job %d", id)
 		return
 	}
-
-	debugMessage = string(b)
 
 	job = &Job{}
 	err = json.Unmarshal(b, job)
@@ -174,7 +178,9 @@ func (s *TowerService) sendRequest(method, url string, body string) (status int,
 		err = errors.Wrapf(err, "could not create request with URI %s", url)
 		return
 	}
+
 	req.SetBasicAuth(s.username, s.password)
+	req.Header.Set("content-type", "application/json")
 
 	resp, err := s.client.Do(req)
 	if err != nil {

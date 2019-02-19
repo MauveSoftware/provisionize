@@ -46,6 +46,7 @@ func main() {
 	templateManager := newTemplateManager(cfg.Templates)
 	services := []server.ProvisionService{
 		ovirtService(cfg, templateManager),
+		ansibleTowerService(cfg, templateManager),
 		googleCloudService(cfg),
 	}
 
