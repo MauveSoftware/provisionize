@@ -30,6 +30,17 @@ type TowerService struct {
 	pollingInterval time.Duration
 }
 
+type apiResponse struct {
+	statusCode int
+	body       []byte
+}
+
+type jobFuncResult struct {
+	err          error
+	debugMessage string
+	job          *Job
+}
+
 // NewService returns a new instance of TowerService
 func NewService(url, username, password string, configService ConfigService) *TowerService {
 	return &TowerService{
@@ -69,10 +80,11 @@ func (s *TowerService) Provision(ctx context.Context, vm *proto.VirtualMachine, 
 }
 
 func (s *TowerService) startJob(fqdn string, templateID uint, ch chan<- *proto.StatusUpdate) (debugInfo string, err error) {
-	job, debugInfo, err := s.postStartRequest(fqdn, templateID, ch)
-	if err != nil {
-		return
+	res := s.postStartRequest(fqdn, templateID, ch)
+	if res.err != nil {
+		return res.debugMessage, res.err
 	}
+	job := res.job
 
 	ch <- &proto.StatusUpdate{
 		Message:     fmt.Sprintf("Started job %d (%s) for playbook %s", job.ID, job.Name, job.Playbook),
@@ -82,7 +94,7 @@ func (s *TowerService) startJob(fqdn string, templateID uint, ch chan<- *proto.S
 	return s.waitForJobToComplete(job, ch)
 }
 
-func (s *TowerService) postStartRequest(fqdn string, templateID uint, ch chan<- *proto.StatusUpdate) (job *Job, debugInfo string, err error) {
+func (s *TowerService) postStartRequest(fqdn string, templateID uint, ch chan<- *proto.StatusUpdate) *jobFuncResult {
 	body := fmt.Sprintf(`{"limit": "%s"}`, fqdn)
 	url := fmt.Sprintf("%s/job_templates/%d/launch/", s.baseURL, templateID)
 
@@ -92,26 +104,28 @@ func (s *TowerService) postStartRequest(fqdn string, templateID uint, ch chan<- 
 		DebugMessage: fmt.Sprintf("URL: %s\nBody: %s", url, body),
 	}
 
-	status, b, err := s.sendRequest("POST", url, body)
+	res, err := s.sendRequest("POST", url, body)
 	if err != nil {
-		return
+		return &jobFuncResult{err: err}
 	}
 
-	debugInfo = string(b)
-
-	if status != http.StatusCreated {
-		err = errors.New(fmt.Sprintf("could not start job (status code %d)", status))
-		return
+	if res.statusCode != http.StatusCreated {
+		return &jobFuncResult{
+			debugMessage: string(res.body),
+			err:          errors.New(fmt.Sprintf("could not start job (status code %d)", res.statusCode)),
+		}
 	}
 
-	job = &Job{}
-	err = json.Unmarshal(b, job)
+	job := &Job{}
+	err = json.Unmarshal(res.body, job)
 	if err != nil {
-		err = errors.Wrapf(err, "could not parse result to job")
-		return
+		return &jobFuncResult{
+			debugMessage: string(res.body),
+			err:          errors.Wrapf(err, "could not parse result to job"),
+		}
 	}
 
-	return job, debugInfo, nil
+	return &jobFuncResult{job: job, debugMessage: string(res.body)}
 }
 
 func (s *TowerService) waitForJobToComplete(job *Job, ch chan<- *proto.StatusUpdate) (debugMessage string, err error) {
@@ -122,61 +136,62 @@ func (s *TowerService) waitForJobToComplete(job *Job, ch chan<- *proto.StatusUpd
 		case <-time.After(s.waitTimeout):
 			return "", errors.New("Operation timed out")
 		case <-time.After(s.pollingInterval):
-			j, d, err := s.getJobUpdate(job.ID)
-			if err != nil {
-				return d, errors.Wrap(err, "could not get job status update")
+			res := s.getJobUpdate(job.ID)
+			if res.err != nil {
+				return res.debugMessage, errors.Wrap(res.err, "could not get job status update")
 			}
 
-			if status != j.Status {
-				status = j.Status
+			if status != res.job.Status {
+				status = res.job.Status
 				ch <- &proto.StatusUpdate{
 					Message:      fmt.Sprintf("New status: %s", status),
 					ServiceName:  serviceName,
-					DebugMessage: d,
+					DebugMessage: res.debugMessage,
 				}
 			}
 
-			if j.Status == "successfull" {
-				return d, nil
+			if res.job.Status == "successfull" {
+				return res.debugMessage, nil
 			}
 
-			if j.Status == "failed" {
-				return d, errors.New("Failed running playbook")
+			if res.job.Status == "failed" {
+				return res.debugMessage, errors.New("Failed running playbook")
 			}
 		}
 	}
 }
 
-func (s *TowerService) getJobUpdate(id uint) (job *Job, debugMessage string, err error) {
+func (s *TowerService) getJobUpdate(id uint) *jobFuncResult {
 	url := fmt.Sprintf("%s/jobs/%d", s.baseURL, id)
 
-	status, b, err := s.sendRequest("GET", url, "")
+	res, err := s.sendRequest("GET", url, "")
 	if err != nil {
-		return
+		return &jobFuncResult{err: err}
 	}
 
-	debugMessage = string(b)
-
-	if status != http.StatusOK {
-		err = fmt.Errorf("could not get status update for job %d", id)
-		return
+	if res.statusCode != http.StatusOK {
+		return &jobFuncResult{
+			debugMessage: string(res.body),
+			err:          fmt.Errorf("could not get status update for job %d", id),
+		}
 	}
 
-	job = &Job{}
-	err = json.Unmarshal(b, job)
+	job := &Job{}
+	err = json.Unmarshal(res.body, job)
 	if err != nil {
-		err = errors.Wrapf(err, "could not parse result to job")
-		return
+		return &jobFuncResult{
+			debugMessage: string(res.body),
+			err:          errors.Wrapf(err, "could not parse result to job"),
+		}
 	}
 
-	return job, debugMessage, nil
+	return &jobFuncResult{job: job, debugMessage: string(res.body)}
 }
 
-func (s *TowerService) sendRequest(method, url string, body string) (status int, b []byte, err error) {
+func (s *TowerService) sendRequest(method, url string, body string) (*apiResponse, error) {
 	req, err := http.NewRequest(method, url, strings.NewReader(body))
 	if err != nil {
-		err = errors.Wrapf(err, "could not create request with URI %s", url)
-		return
+		return nil, errors.Wrapf(err, "could not create request with URI %s", url)
 	}
 
 	req.SetBasicAuth(s.username, s.password)
@@ -184,17 +199,14 @@ func (s *TowerService) sendRequest(method, url string, body string) (status int,
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	status = resp.StatusCode
-
-	b, err = ioutil.ReadAll(resp.Body)
+	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		err = errors.Wrap(err, "could not read from response")
-		return
+		return nil, errors.Wrap(err, "could not read from response")
 	}
 
-	return status, b, nil
+	return &apiResponse{body: b, statusCode: resp.StatusCode}, nil
 }
