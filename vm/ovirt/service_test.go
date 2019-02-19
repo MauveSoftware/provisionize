@@ -16,7 +16,7 @@ const testTemplate = `<vm>
 		<name>{{.ClusterName}}</name>
 	</cluster>
 	<template>
-		<name>{{.TemplateName}}</name>
+		<name>{{ovirt_template_name}}</name>
 	</template>
 	<disks>
 		<clone>true</clone>
@@ -49,6 +49,14 @@ const testTemplate = `<vm>
 		</cloud_init>
 	</initialization>
 </vm>`
+
+type mockConfigService struct {
+	templateName string
+}
+
+func (m *mockConfigService) OvirtTemplateNameForVM(vm *proto.VirtualMachine) string {
+	return m.templateName
+}
 
 func TestGetVMCreateRequest(t *testing.T) {
 	expected := `<vm>
@@ -92,10 +100,10 @@ func TestGetVMCreateRequest(t *testing.T) {
   </vm>`
 
 	vm := &proto.VirtualMachine{
-		Name:         "testhost",
-		ClusterName:  "cluster1",
-		TemplateName: "template1",
-		CpuCores:     4,
+		Name:        "testhost",
+		ClusterName: "cluster1",
+		Template:    "linux",
+		CpuCores:    4,
 		Ipv4: &proto.IPConfig{
 			Address:      "192.168.1.100",
 			PrefixLength: 32,
@@ -110,7 +118,8 @@ func TestGetVMCreateRequest(t *testing.T) {
 	}
 
 	svc := &OvirtService{
-		template: testTemplate,
+		template:      testTemplate,
+		configService: &mockConfigService{templateName: "template1"},
 	}
 	r, err := svc.getVMCreateRequest(vm)
 	if err != nil {

@@ -19,7 +19,7 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
-const version = "0.4.0"
+const version = "0.5.0"
 
 var (
 	showVersion    = kingpin.Flag("version", "Shows version info").Short('v').Bool()
@@ -42,8 +42,9 @@ func main() {
 		log.Fatal(err)
 	}
 
+	templateManager := newTemplateManager(cfg.Templates)
 	services := []server.ProvisionService{
-		ovirtService(cfg),
+		ovirtService(cfg, templateManager),
 		googleCloudService(cfg),
 	}
 
@@ -65,7 +66,7 @@ func loadConfig() (*config.Config, error) {
 	return config.Load(f)
 }
 
-func ovirtService(cfg *config.Config) server.ProvisionService {
+func ovirtService(cfg *config.Config, t *templateManager) server.ProvisionService {
 	c := cfg.Ovirt
 
 	template, err := ioutil.ReadFile(c.TemplatePath)
@@ -73,7 +74,7 @@ func ovirtService(cfg *config.Config) server.ProvisionService {
 		log.Fatal(errors.Wrap(err, "could not load template file"))
 	}
 
-	svc, err := ovirt.NewService(c.URL, c.Username, c.Password, string(template))
+	svc, err := ovirt.NewService(c.URL, c.Username, c.Password, string(template), t)
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "could initialize oVirt service"))
 	}

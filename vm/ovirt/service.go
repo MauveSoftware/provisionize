@@ -21,13 +21,14 @@ const serviceName = "oVirt"
 // OvirtService is the service responsible for creating the virtual machine
 type OvirtService struct {
 	template        string
+	configService   ConfigService
 	client          *ovirt.Client
 	waitTimeout     time.Duration
 	pollingInterval time.Duration
 }
 
 // NewService creates a new instance of OvirtService
-func NewService(url, user, pass string, template string) (*OvirtService, error) {
+func NewService(url, user, pass string, template string, configService ConfigService) (*OvirtService, error) {
 	client, err := ovirt.NewClient(url, user, pass, ovirt.WithDebug())
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create new oVirt client")
@@ -38,6 +39,7 @@ func NewService(url, user, pass string, template string) (*OvirtService, error) 
 		template:        template,
 		waitTimeout:     2 * time.Minute,
 		pollingInterval: 10 * time.Second,
+		configService:   configService,
 	}
 
 	return svc, nil
@@ -99,6 +101,9 @@ func (s *OvirtService) getVMCreateRequest(vm *proto.VirtualMachine) (*bytes.Buff
 	funcs := template.FuncMap{
 		"mb_to_byte": func(x uint32) uint64 {
 			return uint64(x) * (1 << 20)
+		},
+		"ovirt_template_name": func() string {
+			return s.configService.OvirtTemplateNameForVM(vm)
 		},
 	}
 	tmpl, err := template.New("create-vm").Funcs(funcs).Parse(s.template)
