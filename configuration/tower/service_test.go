@@ -5,7 +5,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/MauveSoftware/provisionize/api/proto"
 )
@@ -57,12 +59,24 @@ func TestProvision(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			call := 0
 			handler := func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == "GET" {
+					if strings.HasSuffix(r.URL.Path, "/jobs/1") {
+						w.WriteHeader(http.StatusOK)
+						w.Write([]byte(`{"id":1, "status":"successfull"}`))
+					} else {
+						w.WriteHeader(http.StatusNotFound)
+					}
+
+					return
+				}
+
 				call++
 				if call > test.expectedCalls {
 					t.Fatalf("expected %d http calls, got %d", test.expectedCalls, call)
 				}
 
 				w.WriteHeader(test.statusCodes[call-1])
+				w.Write([]byte(`{"id":1}`))
 			}
 
 			s := httptest.NewServer(http.HandlerFunc(handler))
@@ -78,6 +92,7 @@ func TestProvision(t *testing.T) {
 			}()
 
 			svc := NewService(s.URL, "test", "foo", &mockConfigService{count: test.templateCount})
+			svc.pollingInterval = 10 * time.Millisecond
 
 			result := svc.Provision(context.Background(), &proto.VirtualMachine{}, ch)
 			assert.Equal(t, !test.expectFail, result, "unexpected fail")

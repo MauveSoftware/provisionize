@@ -46,7 +46,7 @@ func (srv *server) Provisionize(req *proto.ProvisionVirtualMachineRequest, strea
 
 	updates := make(chan *proto.StatusUpdate)
 
-	go srv.updateHandler(stream, updates, done)
+	go srv.updateHandler(req.RequestId, stream, updates, done)
 
 	for _, s := range srv.services {
 		if !s.Provision(ctx, req.VirtualMachine, updates) {
@@ -59,9 +59,15 @@ func (srv *server) Provisionize(req *proto.ProvisionVirtualMachineRequest, strea
 	return nil
 }
 
-func (srv *server) updateHandler(stream proto.ProvisionizeService_ProvisionizeServer, updates chan *proto.StatusUpdate,
+func (srv *server) updateHandler(id string, stream proto.ProvisionizeService_ProvisionizeServer, updates chan *proto.StatusUpdate,
 	done chan bool) {
 	for update := range updates {
+		log.Infof("Request: %s\nService: %s\nMessage: %s", id, update.ServiceName, update.Message)
+
+		if len(update.DebugMessage) > 0 {
+			log.Debugf("Request: %s\nService: %s\nDebug-Message: %s", id, update.ServiceName, update.DebugMessage)
+		}
+
 		err := stream.Send(update)
 		if err != nil {
 			log.Errorf("Error while sending update to client: %v", err)

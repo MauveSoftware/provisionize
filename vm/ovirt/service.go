@@ -12,7 +12,6 @@ import (
 	"github.com/MauveSoftware/provisionize/api/proto"
 	ovirt "github.com/czerwonk/ovirt_api/api"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"go.opencensus.io/trace"
 )
 
@@ -75,7 +74,6 @@ func (s *OvirtService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.Statu
 		return nil, err
 	}
 
-	log.Infof("Request for VM %s:\n%s", vm.Name, body)
 	ch <- &proto.StatusUpdate{
 		ServiceName:  serviceName,
 		DebugMessage: body.String(),
@@ -87,7 +85,6 @@ func (s *OvirtService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.Statu
 		return nil, err
 	}
 
-	log.Infof("Response for VM %s:\n%s", vm.Name, string(b))
 	ch <- &proto.StatusUpdate{
 		ServiceName:  serviceName,
 		DebugMessage: string(b),
