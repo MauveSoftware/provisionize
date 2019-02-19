@@ -64,7 +64,7 @@ func (s *TowerService) Provision(ctx context.Context, vm *proto.VirtualMachine, 
 	defer span.End()
 
 	for _, id := range s.configService.TowerTemplateIDsForVM(vm) {
-		debugInfo, err := s.startJob(vm.Fqdn, id, ch)
+		debugInfo, err := s.startJob(vm, id, ch)
 		if err != nil {
 			ch <- &proto.StatusUpdate{
 				Failed:       true,
@@ -79,8 +79,8 @@ func (s *TowerService) Provision(ctx context.Context, vm *proto.VirtualMachine, 
 	return true
 }
 
-func (s *TowerService) startJob(fqdn string, templateID uint, ch chan<- *proto.StatusUpdate) (debugInfo string, err error) {
-	res := s.postStartRequest(fqdn, templateID, ch)
+func (s *TowerService) startJob(vm *proto.VirtualMachine, templateID uint, ch chan<- *proto.StatusUpdate) (debugInfo string, err error) {
+	res := s.postStartRequest(vm, templateID, ch)
 	if res.err != nil {
 		return res.debugMessage, res.err
 	}
@@ -94,8 +94,8 @@ func (s *TowerService) startJob(fqdn string, templateID uint, ch chan<- *proto.S
 	return s.waitForJobToComplete(job, ch)
 }
 
-func (s *TowerService) postStartRequest(fqdn string, templateID uint, ch chan<- *proto.StatusUpdate) *jobFuncResult {
-	body := fmt.Sprintf(`{"limit": "%s"}`, fqdn)
+func (s *TowerService) postStartRequest(vm *proto.VirtualMachine, templateID uint, ch chan<- *proto.StatusUpdate) *jobFuncResult {
+	body := fmt.Sprintf(`{"limit": "%s", "extra_vars": "{\"ansible_host\": \"%s\"}"}`, vm.Fqdn, vm.Ipv4.Address)
 	url := fmt.Sprintf("%s/job_templates/%d/launch/", s.baseURL, templateID)
 
 	ch <- &proto.StatusUpdate{
