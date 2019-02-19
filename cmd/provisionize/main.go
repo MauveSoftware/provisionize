@@ -99,7 +99,7 @@ func googleCloudService(cfg *config.Config) server.ProvisionService {
 }
 
 func ansibleTowerService(cfg *config.Config, t *templateManager) server.ProvisionService {
-	return &tower.NewService(cfg.AnsibleTower.URL, cfg.AnsibleTower.Username, cfg.AnsibleTower.Password, t)
+	return tower.NewService(cfg.AnsibleTower.URL, cfg.AnsibleTower.Username, cfg.AnsibleTower.Password, t)
 }
 
 func initializeZipkin() {
