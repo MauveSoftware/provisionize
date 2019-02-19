@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/MauveSoftware/provisionize/cmd/provisionize/config"
+	"github.com/MauveSoftware/provisionize/configuration/tower"
 	"github.com/MauveSoftware/provisionize/dns/gclouddns"
 	"github.com/MauveSoftware/provisionize/server"
 	"github.com/MauveSoftware/provisionize/vm/ovirt"
@@ -95,6 +96,10 @@ func googleCloudService(cfg *config.Config) server.ProvisionService {
 	}
 
 	return svc
+}
+
+func ansibleTowerService(cfg *config.Config, t *templateManager) server.ProvisionService {
+	return &tower.NewService(cfg.AnsibleTower.URL, cfg.AnsibleTower.Username, cfg.AnsibleTower.Password, t)
 }
 
 func initializeZipkin() {

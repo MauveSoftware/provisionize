@@ -40,6 +40,16 @@ ovirt:
   template_path: /etc/provisionize/template
 gcloud:
   project_id: "123456"
+ansible_tower:
+  url: https://tower
+  username: provisionize
+  password: allthethings
+templates:
+  - name: web
+    ovirt: ubuntu-18-04
+    ansible_tower:
+      - 1
+      - 2 
 ```
 
 An example how /etc/provisionize/template can look like can be found in `examples/template.xml`

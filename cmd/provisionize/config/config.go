@@ -40,6 +40,7 @@ type GoogleCloudDNSConfig struct {
 
 // AnsibleTowerConfig represents the Ansible Tower configuration part
 type AnsibleTowerConfig struct {
+	URL      string `yaml:"url"`
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
 }

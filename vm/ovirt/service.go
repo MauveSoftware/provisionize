@@ -47,7 +47,7 @@ func NewService(url, user, pass string, template string, configService ConfigSer
 
 // Provision creates the virtual machine
 func (s *OvirtService) Provision(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
-	ctx, span := trace.StartSpan(ctx, "OvirtService.PerformStep")
+	ctx, span := trace.StartSpan(ctx, "OvirtService.Provision")
 	defer span.End()
 
 	b, err := s.createVM(vm, ch)

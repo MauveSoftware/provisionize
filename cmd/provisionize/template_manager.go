@@ -25,3 +25,11 @@ func (t *templateManager) OvirtTemplateNameForVM(vm *proto.VirtualMachine) strin
 
 	return ""
 }
+
+func (t *templateManager) TowerTemplateIDsForVM(vm *proto.VirtualMachine) []uint {
+	if template, found := t.templates[vm.Template]; found {
+		return template.AnsibleTemplates
+	}
+
+	return []uint{}
+}

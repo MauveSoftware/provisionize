@@ -18,6 +18,7 @@ gcloud:
   credentials_file: "/config/cred.json"
   project_id: "123"
 ansible_tower:
+  url: https://tower
   username: ansible
   password: magic
 templates:
@@ -40,6 +41,7 @@ templates:
 			ProjectID:       "123",
 		},
 		AnsibleTower: &AnsibleTowerConfig{
+			URL:      "https://tower",
 			Username: "ansible",
 			Password: "magic",
 		},
