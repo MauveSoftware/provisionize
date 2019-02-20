@@ -87,15 +87,16 @@ func (s *TowerService) startJob(vm *proto.VirtualMachine, templateID uint, ch ch
 	job := res.job
 
 	ch <- &proto.StatusUpdate{
-		Message:     fmt.Sprintf("Started job %d (%s) for playbook %s", job.ID, job.Name, job.Playbook),
-		ServiceName: serviceName,
+		Message:      fmt.Sprintf("Start job %d (%s) for playbook %s", job.ID, job.Name, job.Playbook),
+		ServiceName:  serviceName,
+		DebugMessage: res.debugMessage,
 	}
 
 	return s.waitForJobToComplete(job, ch)
 }
 
 func (s *TowerService) postStartRequest(vm *proto.VirtualMachine, templateID uint, ch chan<- *proto.StatusUpdate) *jobFuncResult {
-	body := fmt.Sprintf(`{"limit": "%s", "extra_vars": "{\"ansible_host\": \"%s\"}"}`, vm.Fqdn, vm.Ipv4.Address)
+	body := fmt.Sprintf(`{"limit": "%s", "extra_vars": "{\"ansible_ssh_host\": \"%s\"}"}`, vm.Fqdn, vm.Ipv4.Address)
 	url := fmt.Sprintf("%s/job_templates/%d/launch/", s.baseURL, templateID)
 
 	ch <- &proto.StatusUpdate{
@@ -150,7 +151,7 @@ func (s *TowerService) waitForJobToComplete(job *Job, ch chan<- *proto.StatusUpd
 				}
 			}
 
-			if res.job.Status == "successfull" {
+			if res.job.Status == "successful" {
 				return res.debugMessage, nil
 			}
 
