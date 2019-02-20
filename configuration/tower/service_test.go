@@ -62,9 +62,14 @@ func TestProvision(t *testing.T) {
 				if r.Method == "GET" {
 					if strings.HasSuffix(r.URL.Path, "/jobs/1") {
 						w.WriteHeader(http.StatusOK)
-						w.Write([]byte(`{"id":1, "status":"successfull"}`))
+						w.Write([]byte(`{"id":1, "status":"successful"}`))
 					} else {
 						w.WriteHeader(http.StatusNotFound)
+					}
+
+					if strings.HasPrefix(r.URL.Path, "stdout?format=txt") {
+						w.WriteHeader(http.StatusOK)
+						w.Write([]byte("All done!"))
 					}
 
 					return
@@ -94,7 +99,13 @@ func TestProvision(t *testing.T) {
 			svc := NewService(s.URL, "test", "foo", &mockConfigService{count: test.templateCount})
 			svc.pollingInterval = 10 * time.Millisecond
 
-			result := svc.Provision(context.Background(), &proto.VirtualMachine{}, ch)
+			vm := &proto.VirtualMachine{
+				Name: "test-vm",
+				Ipv4: &proto.IPConfig{
+					Address: "127.0.0.1",
+				},
+			}
+			result := svc.Provision(context.Background(), vm, ch)
 			assert.Equal(t, !test.expectFail, result, "unexpected fail")
 		})
 	}

@@ -92,7 +92,12 @@ func (s *TowerService) startJob(vm *proto.VirtualMachine, templateID uint, ch ch
 		DebugMessage: res.debugMessage,
 	}
 
-	return s.waitForJobToComplete(job, ch)
+	d, err := s.waitForJobToComplete(job, ch)
+	if err != nil {
+		return d, err
+	}
+
+	return d, s.pushStdOut(job.ID, ch)
 }
 
 func (s *TowerService) postStartRequest(vm *proto.VirtualMachine, templateID uint, ch chan<- *proto.StatusUpdate) *jobFuncResult {
@@ -105,7 +110,7 @@ func (s *TowerService) postStartRequest(vm *proto.VirtualMachine, templateID uin
 		DebugMessage: fmt.Sprintf("URL: %s\nBody: %s", url, body),
 	}
 
-	res, err := s.sendRequest("POST", url, body)
+	res, err := s.sendRequest("POST", url, "application/json", body)
 	if err != nil {
 		return &jobFuncResult{err: err}
 	}
@@ -156,6 +161,7 @@ func (s *TowerService) waitForJobToComplete(job *Job, ch chan<- *proto.StatusUpd
 			}
 
 			if res.job.Status == "failed" {
+				s.pushStdOut(res.job.ID, ch)
 				return res.debugMessage, errors.New("Failed running playbook")
 			}
 		}
@@ -165,7 +171,7 @@ func (s *TowerService) waitForJobToComplete(job *Job, ch chan<- *proto.StatusUpd
 func (s *TowerService) getJobUpdate(id uint) *jobFuncResult {
 	url := fmt.Sprintf("%s/jobs/%d", s.baseURL, id)
 
-	res, err := s.sendRequest("GET", url, "")
+	res, err := s.sendRequest("GET", url, "application/json", "")
 	if err != nil {
 		return &jobFuncResult{err: err}
 	}
@@ -189,14 +195,30 @@ func (s *TowerService) getJobUpdate(id uint) *jobFuncResult {
 	return &jobFuncResult{job: job, debugMessage: string(res.body)}
 }
 
-func (s *TowerService) sendRequest(method, url string, body string) (*apiResponse, error) {
+func (s *TowerService) pushStdOut(id uint, ch chan<- *proto.StatusUpdate) error {
+	url := fmt.Sprintf("%s/jobs/%d/stdout?format=txt", s.baseURL, id)
+
+	res, err := s.sendRequest("GET", url, "text/plain", "")
+	if err != nil {
+		return errors.Wrap(err, "could not retrieve output for job")
+	}
+
+	ch <- &proto.StatusUpdate{
+		ServiceName: serviceName,
+		Message:     string(res.body),
+	}
+
+	return nil
+}
+
+func (s *TowerService) sendRequest(method, url, contentType, body string) (*apiResponse, error) {
 	req, err := http.NewRequest(method, url, strings.NewReader(body))
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not create request with URI %s", url)
 	}
 
 	req.SetBasicAuth(s.username, s.password)
-	req.Header.Set("content-type", "application/json")
+	req.Header.Set("content-type", contentType)
 
 	resp, err := s.client.Do(req)
 	if err != nil {
