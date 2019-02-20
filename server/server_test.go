@@ -16,7 +16,7 @@ type mockService struct {
 	err  error
 }
 
-func (m *mockService) PerformStep(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
+func (m *mockService) Provision(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
 	status := &proto.StatusUpdate{
 		ServiceName: m.name,
 	}

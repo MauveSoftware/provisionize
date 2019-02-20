@@ -12,7 +12,6 @@ import (
 	"github.com/MauveSoftware/provisionize/api/proto"
 	ovirt "github.com/czerwonk/ovirt_api/api"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"go.opencensus.io/trace"
 )
 
@@ -21,13 +20,14 @@ const serviceName = "oVirt"
 // OvirtService is the service responsible for creating the virtual machine
 type OvirtService struct {
 	template        string
+	configService   ConfigService
 	client          *ovirt.Client
 	waitTimeout     time.Duration
 	pollingInterval time.Duration
 }
 
 // NewService creates a new instance of OvirtService
-func NewService(url, user, pass string, template string) (*OvirtService, error) {
+func NewService(url, user, pass string, template string, configService ConfigService) (*OvirtService, error) {
 	client, err := ovirt.NewClient(url, user, pass, ovirt.WithDebug())
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create new oVirt client")
@@ -38,14 +38,15 @@ func NewService(url, user, pass string, template string) (*OvirtService, error) 
 		template:        template,
 		waitTimeout:     2 * time.Minute,
 		pollingInterval: 10 * time.Second,
+		configService:   configService,
 	}
 
 	return svc, nil
 }
 
-// PerformStep creates the virtual machine
-func (s *OvirtService) PerformStep(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
-	ctx, span := trace.StartSpan(ctx, "OvirtService.PerformStep")
+// Provision creates the virtual machine
+func (s *OvirtService) Provision(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
+	ctx, span := trace.StartSpan(ctx, "OvirtService.Provision")
 	defer span.End()
 
 	b, err := s.createVM(vm, ch)
@@ -73,7 +74,6 @@ func (s *OvirtService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.Statu
 		return nil, err
 	}
 
-	log.Infof("Request for VM %s:\n%s", vm.Name, body)
 	ch <- &proto.StatusUpdate{
 		ServiceName:  serviceName,
 		DebugMessage: body.String(),
@@ -85,7 +85,6 @@ func (s *OvirtService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.Statu
 		return nil, err
 	}
 
-	log.Infof("Response for VM %s:\n%s", vm.Name, string(b))
 	ch <- &proto.StatusUpdate{
 		ServiceName:  serviceName,
 		DebugMessage: string(b),
@@ -99,6 +98,9 @@ func (s *OvirtService) getVMCreateRequest(vm *proto.VirtualMachine) (*bytes.Buff
 	funcs := template.FuncMap{
 		"mb_to_byte": func(x uint32) uint64 {
 			return uint64(x) * (1 << 20)
+		},
+		"ovirt_template_name": func() string {
+			return s.configService.OvirtTemplateNameForVM(vm)
 		},
 	}
 	tmpl, err := template.New("create-vm").Funcs(funcs).Parse(s.template)

@@ -17,6 +17,16 @@ ovirt:
 gcloud:
   credentials_file: "/config/cred.json"
   project_id: "123"
+ansible_tower:
+  url: https://tower
+  username: ansible
+  password: magic
+templates:
+  - name: linux
+    ovirt: ubuntu-18.04
+    ansible_tower:
+      - 1
+      - 2
 `
 	expected := &Config{
 		ListenAddress: "[::]:1337",
@@ -29,6 +39,18 @@ gcloud:
 		GooglecCloudDNS: &GoogleCloudDNSConfig{
 			CredentialsFile: "/config/cred.json",
 			ProjectID:       "123",
+		},
+		AnsibleTower: &AnsibleTowerConfig{
+			URL:      "https://tower",
+			Username: "ansible",
+			Password: "magic",
+		},
+		Templates: []*ProvisionTemplate{
+			{
+				Name:             "linux",
+				OvirtTemplate:    "ubuntu-18.04",
+				AnsibleTemplates: []uint{1, 2},
+			},
 		},
 	}
 

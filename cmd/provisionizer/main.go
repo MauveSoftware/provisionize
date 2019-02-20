@@ -15,7 +15,7 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
-const version = "0.3.1"
+const version = "0.5.0"
 
 var (
 	showVersion  = kingpin.Flag("version", "Shows version info").Short('v').Bool()
@@ -132,9 +132,9 @@ func requestFromParameters() *proto.ProvisionVirtualMachineRequest {
 				PrefixLength: uint32(*ipv6PfxLen),
 				Gateway:      (*ipv6Gateway).String(),
 			},
-			MemoryMb:     uint32(*memory),
-			Name:         *vmName,
-			TemplateName: *templateName,
+			MemoryMb: uint32(*memory),
+			Name:     *vmName,
+			Template: *templateName,
 		},
 	}
 }

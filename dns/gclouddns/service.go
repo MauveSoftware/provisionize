@@ -50,9 +50,9 @@ func NewDNSService(projectID string, serviceAccountJSON io.Reader) (*GoogleCloud
 	}, nil
 }
 
-// PerformStep creates DNS records for the virtual machine
-func (s *GoogleCloudDNSService) PerformStep(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
-	ctx, span := trace.StartSpan(ctx, "GoogleCloudDNSService.PerformStep")
+// Provision creates DNS records for the virtual machine
+func (s *GoogleCloudDNSService) Provision(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
+	ctx, span := trace.StartSpan(ctx, "GoogleCloudDNSService.Provision")
 	defer span.End()
 
 	if len(vm.Fqdn) == 0 {

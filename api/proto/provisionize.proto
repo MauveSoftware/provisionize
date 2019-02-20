@@ -17,10 +17,10 @@ message IPConfig {
 
 message VirtualMachine {
     string id = 1;
-    string name = 2;
-    string fqdn = 3;
-    string cluster_name = 4;
-    string template_name = 5;
+    string template = 2;
+    string name = 3;
+    string fqdn = 4;
+    string cluster_name = 5;
     uint32 memory_mb = 6;
     uint32 cpu_cores = 7;
     IPConfig ipv4 = 8;
