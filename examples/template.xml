@@ -4,7 +4,7 @@
 		<name>{{.ClusterName}}</name>
 	</cluster>
 	<template>
-		<name>{{.TemplateName}}</name>
+		<name>{{ovirt_template_name}}</name>
 	</template>
 	<disks>
 		<clone>true</clone>
