@@ -101,7 +101,7 @@ func (s *TowerService) startJob(vm *proto.VirtualMachine, templateID uint, ch ch
 }
 
 func (s *TowerService) postStartRequest(vm *proto.VirtualMachine, templateID uint, ch chan<- *proto.StatusUpdate) *jobFuncResult {
-	body := fmt.Sprintf(`{"limit": "%s", "extra_vars": "{\"ansible_ssh_host\": \"%s\"}"}`, vm.Fqdn, vm.Ipv4.Address)
+	body := fmt.Sprintf(`{"limit": "%s", "extra_vars": "ansible_ssh_host: %s"}`, vm.Fqdn, vm.Ipv4.Address)
 	url := fmt.Sprintf("%s/job_templates/%d/launch/", s.baseURL, templateID)
 
 	ch <- &proto.StatusUpdate{
