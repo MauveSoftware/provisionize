@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"strings"
 	"text/template"
 	"time"
@@ -80,7 +81,7 @@ func (s *OvirtService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.Statu
 		Message:      "Start creating VM",
 	}
 
-	b, err := s.client.SendRequest("vms?clone=true", "POST", body)
+	b, err := s.sendCreateRequestWithRetry(body)
 	if err != nil {
 		return nil, err
 	}
@@ -92,6 +93,25 @@ func (s *OvirtService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.Statu
 	}
 
 	return b, nil
+}
+
+func (s *OvirtService) sendCreateRequestWithRetry(body io.Reader) ([]byte, error) {
+	isRetry := false
+	for {
+		b, err := s.client.SendRequest("vms?clone=true", "POST", body)
+		if err == nil {
+			return b, nil
+		}
+
+		if err.Error() == "400 Bad Request" && !isRetry {
+			// oVirt returns 400 if API is not ready, so we retry on this code one more time
+			time.Sleep(100)
+			isRetry = true
+			continue
+		}
+
+		return nil, err
+	}
 }
 
 func (s *OvirtService) getVMCreateRequest(vm *proto.VirtualMachine) (*bytes.Buffer, error) {
