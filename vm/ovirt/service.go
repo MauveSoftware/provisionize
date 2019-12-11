@@ -69,6 +69,12 @@ func (s *OvirtService) Provision(ctx context.Context, vm *proto.VirtualMachine, 
 		s.waitForVMStatus(v.ID, "up", ch)
 }
 
+// Deprovision deletes the virtual machine
+func (s *OvirtService) Deprovision(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
+	ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "Deleting VMs is not supported at the moment"}
+	return true
+}
+
 func (s *OvirtService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) ([]byte, error) {
 	body, err := s.getVMCreateRequest(vm)
 	if err != nil {

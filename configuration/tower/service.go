@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/MauveSoftware/provisionize/api/proto"
 
@@ -76,6 +77,12 @@ func (s *TowerService) Provision(ctx context.Context, vm *proto.VirtualMachine, 
 		}
 	}
 
+	return true
+}
+
+// Deprovision is called when VM is beeing removed
+func (s *TowerService) Deprovision(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
+	// nothing to clean up in Tower
 	return true
 }
 

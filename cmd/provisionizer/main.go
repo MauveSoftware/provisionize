@@ -8,11 +8,13 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/MauveSoftware/provisionize/api/proto"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
+
+	"github.com/MauveSoftware/provisionize/api/proto"
+	"github.com/MauveSoftware/provisionize/clientutils"
 )
 
 const version = "0.5.0"
@@ -87,7 +89,7 @@ func startProvisioning() (bool, error) {
 			return false, err
 		}
 
-		logServiceResult(in)
+		clientutils.LogServiceResult(in, *debug)
 
 		if in.Failed {
 			return false, nil
@@ -95,27 +97,8 @@ func startProvisioning() (bool, error) {
 	}
 }
 
-func logServiceResult(service *proto.StatusUpdate) {
-	log.Println(service.ServiceName)
-
-	if service.Failed {
-		log.Println("Failed!")
-	}
-
-	if len(service.Message) != 0 {
-		log.Println(service.Message)
-	}
-
-	if *debug && len(service.DebugMessage) != 0 {
-		log.Println("Debug:")
-		log.Println(service.DebugMessage)
-	}
-
-	log.Println()
-}
-
-func requestFromParameters() *proto.ProvisionVirtualMachineRequest {
-	return &proto.ProvisionVirtualMachineRequest{
+func requestFromParameters() *proto.ProvisionizeRequest {
+	return &proto.ProvisionizeRequest{
 		RequestId: uuid.New().String(),
 		VirtualMachine: &proto.VirtualMachine{
 			ClusterName: *clusterName,

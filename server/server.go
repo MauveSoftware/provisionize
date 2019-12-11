@@ -12,6 +12,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type client interface {
+	Send(*proto.StatusUpdate) error
+}
+
 type server struct {
 	services []ProvisionService
 }
@@ -34,7 +38,7 @@ func StartServer(conn net.Listener, services []ProvisionService) error {
 	return nil
 }
 
-func (srv *server) Provisionize(req *proto.ProvisionVirtualMachineRequest, stream proto.ProvisionizeService_ProvisionizeServer) error {
+func (srv *server) Provisionize(req *proto.ProvisionizeRequest, stream proto.ProvisionizeService_ProvisionizeServer) error {
 	log.Info("Received Provisionize request:", req)
 	ctx, span := trace.StartSpan(stream.Context(), "API.Provisionize")
 	defer span.End()
@@ -59,7 +63,32 @@ func (srv *server) Provisionize(req *proto.ProvisionVirtualMachineRequest, strea
 	return nil
 }
 
-func (srv *server) updateHandler(id string, stream proto.ProvisionizeService_ProvisionizeServer, updates chan *proto.StatusUpdate,
+func (srv *server) Deprovisionize(req *proto.ProvisionizeRequest, stream proto.ProvisionizeService_DeprovisionizeServer) error {
+	log.Info("Received Deprovisionize request:", req)
+	ctx, span := trace.StartSpan(stream.Context(), "API.Deprovisionize")
+	defer span.End()
+
+	// TODO: sanity checks
+
+	done := make(chan bool)
+	defer close(done)
+
+	updates := make(chan *proto.StatusUpdate)
+
+	go srv.updateHandler(req.RequestId, stream, updates, done)
+
+	for _, s := range srv.services {
+		if !s.Deprovision(ctx, req.VirtualMachine, updates) {
+			break
+		}
+	}
+
+	close(updates)
+	<-done
+	return nil
+}
+
+func (srv *server) updateHandler(id string, cl client, updates chan *proto.StatusUpdate,
 	done chan bool) {
 	for update := range updates {
 		log.Infof("Request: %s\nService: %s\nMessage: %s", id, update.ServiceName, update.Message)
@@ -68,7 +97,7 @@ func (srv *server) updateHandler(id string, stream proto.ProvisionizeService_Pro
 			log.Debugf("Request: %s\nService: %s\nDebug-Message: %s", id, update.ServiceName, update.DebugMessage)
 		}
 
-		err := stream.Send(update)
+		err := cl.Send(update)
 		if err != nil {
 			log.Errorf("Error while sending update to client: %v", err)
 		}

@@ -3,7 +3,9 @@ package gclouddns
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/MauveSoftware/provisionize/api/proto"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/api/dns/v1"
 )
@@ -22,14 +24,15 @@ type zone struct {
 func (z *zone) records() ([]*dns.ResourceRecordSet, error) {
 	resp, err := z.service.ResourceRecordSets.List(z.projectID, z.name).Do()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "could not retrieve record set for zone %s", z.name)
 	}
 
 	return resp.Rrsets, nil
 }
 
 func (z *zone) ensureRecordExists(name, recType, value string, recs []*dns.ResourceRecordSet) error {
-	if z.isInRecordSet(name, recType, recs) {
+	_, found := z.findRecordSet(name, recType, recs)
+	if found {
 		message := fmt.Sprintf("%s record for %s already exists: skipping", recType, name)
 		log.Info(message)
 		z.ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: message}
@@ -40,14 +43,27 @@ func (z *zone) ensureRecordExists(name, recType, value string, recs []*dns.Resou
 	return z.createRecord(name, recType, value)
 }
 
-func (z *zone) isInRecordSet(name, recType string, recs []*dns.ResourceRecordSet) bool {
+func (z *zone) ensureRecordAbsent(name, recType string, recs []*dns.ResourceRecordSet) error {
+	rec, found := z.findRecordSet(name, recType, recs)
+	if !found {
+		message := fmt.Sprintf("%s record for %s already removed: skipping", recType, name)
+		log.Info(message)
+		z.ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: message}
+
+		return nil
+	}
+
+	return z.removeRecord(rec)
+}
+
+func (z *zone) findRecordSet(name, recType string, recs []*dns.ResourceRecordSet) (record *dns.ResourceRecordSet, found bool) {
 	for _, rec := range recs {
 		if rec.Type == recType && rec.Name == name {
-			return true
+			return rec, true
 		}
 	}
 
-	return false
+	return nil, false
 }
 
 func (z *zone) createRecord(name, recType, value string) error {
@@ -70,6 +86,26 @@ func (z *zone) createRecord(name, recType, value string) error {
 		z.ch <- &proto.StatusUpdate{
 			ServiceName:  serviceName,
 			Message:      fmt.Sprintf("Created: %s\t%d\t%s\t%s", record.Name, record.Ttl, record.Type, record.Rrdatas[0]),
+			DebugMessage: string(b),
+		}
+	}
+
+	return err
+}
+
+func (z *zone) removeRecord(record *dns.ResourceRecordSet) error {
+	log.Infof("Deleting %s record for %s with value %s", record.Type, record.Name, record.Rrdatas)
+
+	change := &dns.Change{
+		Deletions: []*dns.ResourceRecordSet{record},
+	}
+
+	c, err := z.service.Changes.Create(z.projectID, z.name, change).Do()
+	if err == nil {
+		b, _ := json.Marshal(c)
+		z.ch <- &proto.StatusUpdate{
+			ServiceName:  serviceName,
+			Message:      fmt.Sprintf("Deleted: %s\t%d\t%s\t%s", record.Name, record.Ttl, record.Type, record.Rrdatas[0]),
 			DebugMessage: string(b),
 		}
 	}

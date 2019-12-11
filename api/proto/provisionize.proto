@@ -27,11 +27,12 @@ message VirtualMachine {
     IPConfig ipv6 = 9;
 }
 
-message ProvisionVirtualMachineRequest {
+message ProvisionizeRequest {
     string request_id = 1;
     VirtualMachine virtual_machine = 2;
 }
 
 service ProvisionizeService {
-    rpc Provisionize(ProvisionVirtualMachineRequest) returns (stream StatusUpdate) {}
+    rpc Provisionize(ProvisionizeRequest) returns (stream StatusUpdate) {}
+    rpc Deprovisionize(ProvisionizeRequest) returns (stream StatusUpdate) {}
 }
