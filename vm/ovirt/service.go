@@ -69,6 +69,27 @@ func (s *OvirtService) Provision(ctx context.Context, vm *proto.VirtualMachine, 
 		s.waitForVMStatus(v.ID, "up", ch)
 }
 
+// Deprovision deletes the virtual machine
+func (s *OvirtService) Deprovision(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
+	v, err := s.getVMByName(vm.Name)
+	if err != nil {
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+		return false
+	}
+
+	if v == nil {
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: fmt.Sprintf("VM %s does not exist: skipping", vm.Name)}
+		return true
+	}
+
+	if v.Status != "down" {
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: fmt.Sprintf("VM is not down. Current status: %s", v.Status)}
+		return false
+	}
+
+	return s.deleteVM(v.ID, ch) && s.waitForVanish(v.ID, ch)
+}
+
 func (s *OvirtService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) ([]byte, error) {
 	body, err := s.getVMCreateRequest(vm)
 	if err != nil {
@@ -161,6 +182,28 @@ func (s *OvirtService) waitForVMStatus(id string, desiredStatus string, ch chan<
 	}
 }
 
+func (s *OvirtService) waitForVanish(id string, ch chan<- *proto.StatusUpdate) bool {
+	for {
+		select {
+		case <-time.After(s.waitTimeout):
+			ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: "Operation timed out"}
+			return false
+
+		case <-time.After(s.pollingInterval):
+			vm, err := s.getVM(id)
+			if err != nil && err.Error() != "404 Not Found" {
+				ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+				return false
+			}
+
+			if vm == nil {
+				ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "VM deleted"}
+				return true
+			}
+		}
+	}
+}
+
 func (s *OvirtService) getVM(id string) (*VM, error) {
 	var vm VM
 	err := s.client.GetAndParse(fmt.Sprintf("vms/%s", id), &vm)
@@ -171,6 +214,22 @@ func (s *OvirtService) getVM(id string) (*VM, error) {
 	return &vm, nil
 }
 
+func (s *OvirtService) getVMByName(name string) (*VM, error) {
+	var vms VMs
+	err := s.client.GetAndParse("vms", &vms)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, vm := range vms.VMs {
+		if vm.Name == name {
+			return &vm, nil
+		}
+	}
+
+	return nil, nil
+}
+
 func (s *OvirtService) startVM(id string, ch chan<- *proto.StatusUpdate) bool {
 	body := strings.NewReader("<action/>")
 	b, err := s.client.SendRequest(fmt.Sprintf("vms/%s/start", id), "POST", body)
@@ -178,6 +237,18 @@ func (s *OvirtService) startVM(id string, ch chan<- *proto.StatusUpdate) bool {
 		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
 		return false
 	}
+
 	ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "VM started", DebugMessage: string(b)}
+	return true
+}
+
+func (s *OvirtService) deleteVM(id string, ch chan<- *proto.StatusUpdate) bool {
+	b, err := s.client.SendRequest(fmt.Sprintf("vms/%s", id), "DELETE", nil)
+	if err != nil {
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+		return false
+	}
+
+	ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "VM deletion initiated", DebugMessage: string(b)}
 	return true
 }

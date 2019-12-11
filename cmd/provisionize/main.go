@@ -11,24 +11,22 @@ import (
 	"github.com/MauveSoftware/provisionize/dns/gclouddns"
 	"github.com/MauveSoftware/provisionize/server"
 	"github.com/MauveSoftware/provisionize/vm/ovirt"
+
+	"contrib.go.opencensus.io/exporter/zipkin"
 	openzipkin "github.com/openzipkin/zipkin-go"
 	zipkinHTTP "github.com/openzipkin/zipkin-go/reporter/http"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"go.opencensus.io/exporter/zipkin"
 	"go.opencensus.io/trace"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
-const version = "0.5.1"
-
-var (
-	showVersion    = kingpin.Flag("version", "Shows version info").Short('v').Bool()
-	configFile     = kingpin.Flag("config", "Path to config file").Short('c').Default("config.yml").String()
-	zipkinEndpoint = kingpin.Flag("zipkin-endpoint", "URL to sent tracing information to").String()
-)
+const version = "0.6.0"
 
 func main() {
+	showVersion := kingpin.Flag("version", "Shows version info").Short('v').Bool()
+	configFile := kingpin.Flag("config", "Path to config file").Short('c').Default("config.yml").String()
+	zipkinEndpoint := kingpin.Flag("zipkin-endpoint", "URL to sent tracing information to").String()
 	kingpin.Parse()
 
 	if *showVersion {
@@ -36,9 +34,9 @@ func main() {
 		os.Exit(0)
 	}
 
-	initializeZipkin()
+	initializeZipkin(*zipkinEndpoint)
 
-	cfg, err := loadConfig()
+	cfg, err := loadConfig(*configFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,8 +56,8 @@ func main() {
 	server.StartServer(list, services)
 }
 
-func loadConfig() (*config.Config, error) {
-	f, err := os.Open(*configFile)
+func loadConfig(configFile string) (*config.Config, error) {
+	f, err := os.Open(configFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not open from config file")
 	}
@@ -93,7 +91,7 @@ func googleCloudService(cfg *config.Config) server.ProvisionService {
 
 	svc, err := gclouddns.NewDNSService(cfg.GooglecCloudDNS.ProjectID, f)
 	if err != nil {
-		log.Fatal(errors.Wrap(err, "could initialize Google Cloud DNS service"))
+		log.Fatal(errors.Wrap(err, "could not initialize Google Cloud DNS service"))
 	}
 
 	return svc
@@ -103,8 +101,8 @@ func ansibleTowerService(cfg *config.Config, t *templateManager) server.Provisio
 	return tower.NewService(cfg.AnsibleTower.URL, cfg.AnsibleTower.Username, cfg.AnsibleTower.Password, t)
 }
 
-func initializeZipkin() {
-	if len(*zipkinEndpoint) == 0 {
+func initializeZipkin(zipkinEndpoint string) {
+	if len(zipkinEndpoint) == 0 {
 		return
 	}
 
@@ -114,7 +112,7 @@ func initializeZipkin() {
 		return
 	}
 
-	reporter := zipkinHTTP.NewReporter(*zipkinEndpoint)
+	reporter := zipkinHTTP.NewReporter(zipkinEndpoint)
 	exporter := zipkin.NewExporter(reporter, localEndpoint)
 	trace.RegisterExporter(exporter)
 
