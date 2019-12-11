@@ -197,6 +197,7 @@ func (s *OvirtService) waitForVanish(id string, ch chan<- *proto.StatusUpdate) b
 			}
 
 			if vm == nil {
+				ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "VM deleted"}
 				return true
 			}
 		}
