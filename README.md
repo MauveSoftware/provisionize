@@ -12,6 +12,7 @@ Since this is an early develpoment version, there can be breaking changes before
 ### Installation
 ```bash
 go get github.com/mauvesoftware/provisionize/cmd/provisionizer
+go get github.com/mauvesoftware/provisionize/cmd/deprovisionizer
 ```
 
 ### Usage
