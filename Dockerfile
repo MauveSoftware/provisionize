@@ -1,5 +1,7 @@
 FROM golang as builder
-RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go get github.com/MauveSoftware/provisionize/cmd/provisionize
+ADD . /go/provisionize/
+WORKDIR /go/provisionize/cmd/provisionize
+RUN CGOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -o /go/bin/provisionize
 
 FROM alpine:latest
 ENV ZipkinEndpoint ""
