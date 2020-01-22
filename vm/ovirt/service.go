@@ -29,7 +29,7 @@ type OvirtService struct {
 
 // NewService creates a new instance of OvirtService
 func NewService(url, user, pass string, template string, configService ConfigService) (*OvirtService, error) {
-	client, err := ovirt.NewClient(url, user, pass, ovirt.WithDebug())
+	client, err := ovirt.NewClient(url, user, pass, ovirt.WithDebug(), ovirt.WithInsecure())
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create new oVirt client")
 	}
