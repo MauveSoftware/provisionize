@@ -6,4 +6,6 @@ jobs:
     steps:
       - checkout
 
-      - run: go build
+      - run: cd cmd/provisionize && go build
+      - run: cd cmd/provisionizer && go build
+      - run: cd cmd/deprovisionizer && go build
