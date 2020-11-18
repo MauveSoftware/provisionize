@@ -1,11 +1,23 @@
 version: 2
 jobs:
-  build:
+  build_provisionize:
     docker:
       - image: circleci/golang:1.14
     steps:
       - checkout
 
       - run: cd cmd/provisionize && go build
+  build_provisionizer:
+    docker:
+      - image: circleci/golang:1.14
+    steps:
+      - checkout
+
       - run: cd cmd/provisionizer && go build
+  build_deprovisionize:
+    docker:
+      - image: circleci/golang:1.14
+    steps:
+      - checkout
+      
       - run: cd cmd/deprovisionizer && go build
