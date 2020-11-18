@@ -1,6 +1,5 @@
 [![CircleCI](https://circleci.com/gh/MauveSoftware/provisionize.svg?style=shield)](https://circleci.com/gh/MauveSoftware/provisionize)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mauvesoftware/provisionize)](https://goreportcard.com/report/github.com/mauvesoftware/provisionize)
-[![codecov](https://codecov.io/gh/MauveSoftware/provisionize/branch/master/graph/badge.svg?token=G8NH51DJ07)](https://codecov.io/gh/MauveSoftware/provisionize)
 
 # provisionize
 Zero touch provisioning for oVirt VMs with Google Cloud DNS integration
