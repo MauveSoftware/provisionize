@@ -1,7 +1,7 @@
 package ovirt
 
 import (
-	"github.com/MauveSoftware/provisionize/api/proto"
+	"github.com/MauveSoftware/provisionize/pkg/api/proto"
 )
 
 // ConfigService encapsulates the configuration which depents on the type of VM

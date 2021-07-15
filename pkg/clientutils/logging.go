@@ -3,7 +3,7 @@ package clientutils
 import (
 	log "github.com/sirupsen/logrus"
 
-	"github.com/MauveSoftware/provisionize/api/proto"
+	"github.com/MauveSoftware/provisionize/pkg/api/proto"
 )
 
 func LogServiceResult(service *proto.StatusUpdate, debug bool) {

@@ -10,7 +10,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/MauveSoftware/provisionize/api/proto"
+	"github.com/MauveSoftware/provisionize/pkg/api/proto"
 	ovirt "github.com/czerwonk/ovirt_api/api"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"

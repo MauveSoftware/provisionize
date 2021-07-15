@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/MauveSoftware/provisionize/api/proto"
 	"github.com/MauveSoftware/provisionize/cmd/provisionize/config"
+	"github.com/MauveSoftware/provisionize/pkg/api/proto"
 )
 
 type templateManager struct {

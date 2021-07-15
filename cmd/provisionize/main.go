@@ -7,10 +7,10 @@ import (
 	"os"
 
 	"github.com/MauveSoftware/provisionize/cmd/provisionize/config"
-	"github.com/MauveSoftware/provisionize/configuration/tower"
-	"github.com/MauveSoftware/provisionize/dns/gclouddns"
-	"github.com/MauveSoftware/provisionize/server"
-	"github.com/MauveSoftware/provisionize/vm/ovirt"
+	"github.com/MauveSoftware/provisionize/pkg/configuration/tower"
+	"github.com/MauveSoftware/provisionize/pkg/dns/gclouddns"
+	"github.com/MauveSoftware/provisionize/pkg/server"
+	"github.com/MauveSoftware/provisionize/pkg/vm/ovirt"
 
 	"contrib.go.opencensus.io/exporter/zipkin"
 	openzipkin "github.com/openzipkin/zipkin-go"

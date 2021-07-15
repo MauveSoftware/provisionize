@@ -3,7 +3,8 @@ package server
 import (
 	"net"
 
-	"github.com/MauveSoftware/provisionize/api/proto"
+	"github.com/MauveSoftware/provisionize/pkg/api/proto"
+
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc"

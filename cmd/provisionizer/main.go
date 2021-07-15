@@ -13,8 +13,8 @@ import (
 	"google.golang.org/grpc"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/MauveSoftware/provisionize/api/proto"
-	"github.com/MauveSoftware/provisionize/clientutils"
+	"github.com/MauveSoftware/provisionize/pkg/api/proto"
+	"github.com/MauveSoftware/provisionize/pkg/clientutils"
 )
 
 const version = "0.5.0"

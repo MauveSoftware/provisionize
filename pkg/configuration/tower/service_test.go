@@ -2,14 +2,15 @@ package tower
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/MauveSoftware/provisionize/api/proto"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/MauveSoftware/provisionize/pkg/api/proto"
 )
 
 type mockConfigService struct {

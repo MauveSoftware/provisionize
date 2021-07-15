@@ -10,9 +10,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/MauveSoftware/provisionize/api/proto"
-	pdns "github.com/MauveSoftware/provisionize/dns"
-	"github.com/MauveSoftware/provisionize/utils"
+	"github.com/MauveSoftware/provisionize/pkg/api/proto"
+	pdns "github.com/MauveSoftware/provisionize/pkg/dns"
+	"github.com/MauveSoftware/provisionize/pkg/utils"
 
 	"go.opencensus.io/trace"
 	"golang.org/x/oauth2/google"

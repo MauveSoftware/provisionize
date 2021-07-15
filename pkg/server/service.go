@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 
-	"github.com/MauveSoftware/provisionize/api/proto"
+	"github.com/MauveSoftware/provisionize/pkg/api/proto"
 )
 
 // ProvisionService is a service interface for services participating in a provisioning

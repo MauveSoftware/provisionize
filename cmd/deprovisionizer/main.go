@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/MauveSoftware/provisionize/api/proto"
-	"github.com/MauveSoftware/provisionize/clientutils"
+	"github.com/MauveSoftware/provisionize/pkg/api/proto"
+	"github.com/MauveSoftware/provisionize/pkg/clientutils"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
