@@ -1,4 +1,3 @@
-[![CircleCI](https://circleci.com/gh/MauveSoftware/provisionize.svg?style=shield)](https://circleci.com/gh/MauveSoftware/provisionize)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mauvesoftware/provisionize)](https://goreportcard.com/report/github.com/mauvesoftware/provisionize)
 
 # provisionize
