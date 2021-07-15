@@ -22,6 +22,7 @@ type ProvisionTemplate struct {
 	Name             string `yaml:"name"`
 	OvirtTemplate    string `yaml:"ovirt"`
 	AnsibleTemplates []uint `yaml:"ansible_tower"`
+	BootDiskName     string `yaml:"boot_disk_name"`
 }
 
 // OvirtConfig represents to oVirt configuration part

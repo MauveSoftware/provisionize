@@ -65,6 +65,7 @@ func (s *OvirtService) Provision(ctx context.Context, vm *proto.VirtualMachine, 
 
 	ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "Waiting for VM initialization to complete"}
 	return s.waitForVMStatus(v.ID, "down", ch) &&
+		s.ensureBootDiskIsAttached(vm, v.ID, ch) &&
 		s.startVM(v.ID, ch) &&
 		s.waitForVMStatus(v.ID, "up", ch)
 }
@@ -228,6 +229,84 @@ func (s *OvirtService) getVMByName(name string) (*VM, error) {
 	}
 
 	return nil, nil
+}
+
+func (s *OvirtService) ensureBootDiskIsAttached(vm *proto.VirtualMachine, id string, ch chan<- *proto.StatusUpdate) bool {
+	if s.isBootDiskAttached(id, ch) {
+		return true
+	}
+
+	diskID := s.findCreatedDisk(vm, ch)
+	if diskID == "" {
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: "No boot disk attached"}
+		return false
+	}
+
+	return s.attachDisk(id, diskID, ch)
+}
+
+func (s *OvirtService) isBootDiskAttached(id string, ch chan<- *proto.StatusUpdate) bool {
+	ch <- &proto.StatusUpdate{
+		ServiceName: serviceName,
+		Message:     "Check if boot disk is attached to VM",
+	}
+
+	var attachments DiskAttachments
+	err := s.client.GetAndParse(fmt.Sprintf("vms/%s/diskattachments", id), &attachments)
+	if err != nil {
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+		return false
+	}
+
+	for _, a := range attachments.Attachments {
+		if a.Bootable == true {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (s *OvirtService) findCreatedDisk(vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) string {
+	var disks Disks
+	err := s.client.GetAndParse("/disks?search=number_of_vms=0", &disks)
+	if err != nil {
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+		return ""
+	}
+
+	if len(disks.Disks) == 0 {
+		return ""
+	}
+
+	newest := disks.Disks[0]
+	if newest.Name == s.configService.BootDiskName(vm) {
+		return newest.ID
+	}
+
+	return ""
+}
+
+func (s *OvirtService) attachDisk(id, diskID string, ch chan<- *proto.StatusUpdate) bool {
+	d := &NewDiskAttachment{
+		Bootable:    true,
+		PassDiscard: false,
+		Interface:   "virtio_scsi",
+		Active:      true,
+		Disk: Disk{
+			ID: diskID,
+		},
+	}
+	ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "Attaching disk " + diskID, DebugMessage: string(d.serialize())}
+
+	b, err := s.client.SendRequest(fmt.Sprintf("/vms/%s/diskattachments", id), "POST", bytes.NewReader(d.serialize()))
+	if err != nil {
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+		return false
+	}
+
+	ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "Disk attached", DebugMessage: string(b)}
+	return s.waitForVMStatus(id, "down", ch)
 }
 
 func (s *OvirtService) startVM(id string, ch chan<- *proto.StatusUpdate) bool {

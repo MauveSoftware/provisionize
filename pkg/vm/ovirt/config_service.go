@@ -8,4 +8,7 @@ import (
 type ConfigService interface {
 	// OvirtTemplateNameForVM returns the ovirt template name for an VM
 	OvirtTemplateNameForVM(vm *proto.VirtualMachine) string
+
+	// BootDiskName returns the name of the boot diks
+	BootDiskName(vm *proto.VirtualMachine) string
 }

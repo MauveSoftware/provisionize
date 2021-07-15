@@ -26,6 +26,14 @@ func (t *templateManager) OvirtTemplateNameForVM(vm *proto.VirtualMachine) strin
 	return ""
 }
 
+func (t *templateManager) BootDiskName(vm *proto.VirtualMachine) string {
+	if template, found := t.templates[vm.Template]; found {
+		return template.BootDiskName
+	}
+
+	return ""
+}
+
 func (t *templateManager) TowerTemplateIDsForVM(vm *proto.VirtualMachine) []uint {
 	if template, found := t.templates[vm.Template]; found {
 		return template.AnsibleTemplates

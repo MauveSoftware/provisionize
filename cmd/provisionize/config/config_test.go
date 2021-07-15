@@ -27,6 +27,7 @@ templates:
     ansible_tower:
       - 1
       - 2
+    boot_disk_name: new-disk
 `
 	expected := &Config{
 		ListenAddress: "[::]:1337",
@@ -50,6 +51,7 @@ templates:
 				Name:             "linux",
 				OvirtTemplate:    "ubuntu-18.04",
 				AnsibleTemplates: []uint{1, 2},
+				BootDiskName:     "new-disk",
 			},
 		},
 	}

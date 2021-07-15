@@ -58,6 +58,10 @@ func (m *mockConfigService) OvirtTemplateNameForVM(vm *proto.VirtualMachine) str
 	return m.templateName
 }
 
+func (m *mockConfigService) BootDiskName(vm *proto.VirtualMachine) string {
+	return "new-disk"
+}
+
 func TestGetVMCreateRequest(t *testing.T) {
 	expected := `<vm>
 	<name>testhost</name>
