@@ -238,7 +238,6 @@ func (s *OvirtService) ensureBootDiskIsAttached(vm *proto.VirtualMachine, id str
 
 	diskID := s.findCreatedDisk(vm, ch)
 	if diskID == "" {
-		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: "No boot disk attached"}
 		return false
 	}
 
@@ -276,14 +275,17 @@ func (s *OvirtService) findCreatedDisk(vm *proto.VirtualMachine, ch chan<- *prot
 	}
 
 	if len(disks.Disks) == 0 {
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: "No unattached disk found"}
 		return ""
 	}
 
-	newest := disks.Disks[0]
-	if newest.Name == s.configService.BootDiskName(vm) {
-		return newest.ID
+	for _, d := range disks.Disks {
+		if d.Name == s.configService.BootDiskName(vm) {
+			return d.ID
+		}
 	}
 
+	ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: "Created boot disk could not be found"}
 	return ""
 }
 
