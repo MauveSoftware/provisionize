@@ -6,7 +6,7 @@ require (
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
 	github.com/czerwonk/ovirt_api v0.0.0-20190114183432-31037b874427
 	github.com/golang/protobuf v1.5.3
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/openzipkin/zipkin-go v0.4.2
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
