@@ -10,7 +10,7 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.2
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
 	golang.org/x/oauth2 v0.18.0
 	google.golang.org/api v0.167.0
