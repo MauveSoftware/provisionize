@@ -12,7 +12,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
-	golang.org/x/oauth2 v0.19.0
+	golang.org/x/oauth2 v0.21.0
 	google.golang.org/api v0.176.1
 	google.golang.org/grpc v1.63.2
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
