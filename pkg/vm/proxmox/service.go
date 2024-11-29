@@ -67,13 +67,7 @@ func (s *ProxmoxService) Deprovision(ctx context.Context, vm *proto.VirtualMachi
 	ctx, span := trace.StartSpan(ctx, "ProxmoxService.Deprovision")
 	defer span.End()
 
-	id, err := strconv.Atoi(vm.Id)
-	if err != nil {
-		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: "ID has to be numeric"}
-		return false
-	}
-
-	ref, err := s.cl.GetVmRefById(id)
+	ref, err := s.cl.GetVmRefByName(vm.Name)
 	if err != nil {
 		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
 		return false
