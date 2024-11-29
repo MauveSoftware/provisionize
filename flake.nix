@@ -20,7 +20,7 @@
           inherit (prev) buildGo123Module callPackage lib;
         in
         {
-          provisionize = callPackage ./package.nix { inherit buildGo122Module lib; };
+          provisionize = callPackage ./package.nix { inherit buildGo123Module lib; };
         };
 
       packages = forAllSystems (system: rec {
