@@ -11,7 +11,7 @@ import (
 	"github.com/MauveSoftware/provisionize/pkg/dns/gclouddns"
 	"github.com/MauveSoftware/provisionize/pkg/server"
 	"github.com/MauveSoftware/provisionize/pkg/vm/ovirt"
-	proxmox "github.com/MauveSoftware/provisionize/pkg/vm/proxox"
+	"github.com/MauveSoftware/provisionize/pkg/vm/proxmox"
 
 	"contrib.go.opencensus.io/exporter/zipkin"
 	"github.com/alecthomas/kingpin/v2"
