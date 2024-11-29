@@ -1,6 +1,6 @@
 { pkgs, lib, buildGo122Module }:
 
-buildGo122Module {
+buildGo123Module {
   pname = "provisionize";
   version = "0.7.0";
 
@@ -16,7 +16,7 @@ buildGo122Module {
   CGO_ENABLED = 0;
 
   meta = with lib; {
-    description = "Zero touch provisioning for oVirt VMs with Google Cloud DNS integration";
+    description = "Zero touch provisioning for VMs with DNS integration";
     homepage = "https://github.com/MauveSoftware/provisionize";
     license = licenses.mit;
   };
