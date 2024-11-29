@@ -12,6 +12,7 @@ import (
 type Config struct {
 	ListenAddress   string                `yaml:"listen_address"`
 	Ovirt           *OvirtConfig          `yaml:"ovirt"`
+	Proxmox         *ProxmoxConfig        `yaml:"proxmox"`
 	GooglecCloudDNS *GoogleCloudDNSConfig `yaml:"gcloud"`
 	AnsibleTower    *AnsibleTowerConfig   `yaml:"ansible_tower"`
 	Templates       []*ProvisionTemplate  `yaml:"templates"`
@@ -25,12 +26,19 @@ type ProvisionTemplate struct {
 	BootDiskName     string `yaml:"boot_disk_name"`
 }
 
-// OvirtConfig represents to oVirt configuration part
+// OvirtConfig represents the oVirt configuration part
 type OvirtConfig struct {
 	URL          string `yaml:"url"`
 	Username     string `yaml:"username"`
 	Password     string `yaml:"password"`
 	TemplatePath string `yaml:"template_path"`
+}
+
+// ProxmoxConfig represents the Proxmox configuration part
+type ProxmoxConfig struct {
+	URL      string `yaml:"url"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 }
 
 // GoogleCloudDNSConfig represents to DNS configuration part

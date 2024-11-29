@@ -1,9 +1,10 @@
 module github.com/MauveSoftware/provisionize
 
-go 1.22
+go 1.23
 
 require (
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
+	github.com/Telmate/proxmox-api-go v0.0.0-20241127232213-af1f4e86b570
 	github.com/czerwonk/ovirt_api v0.0.0-20190114183432-31037b874427
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0

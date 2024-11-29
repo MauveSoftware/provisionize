@@ -14,6 +14,10 @@ ovirt:
   username: provisionize
   password: allTheThings
   template_path: /etc/provisionize/template
+proxmox:
+  url: https://proxmox:8006/api2/json
+  username: pve_prov
+  password: pve_pass
 gcloud:
   credentials_file: "/config/cred.json"
   project_id: "123"
@@ -36,6 +40,11 @@ templates:
 			Password:     "allTheThings",
 			TemplatePath: "/etc/provisionize/template",
 			URL:          "https://my-ovirt.instance",
+		},
+		Proxmox: &ProxmoxConfig{
+			URL:      "https://proxmox:8006/api2/json",
+			Username: "pve_prov",
+			Password: "pve_pass",
 		},
 		GooglecCloudDNS: &GoogleCloudDNSConfig{
 			CredentialsFile: "/config/cred.json",
