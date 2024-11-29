@@ -1,5 +1,5 @@
 {
-  description = "Zero touch provisioning for oVirt VMs with Google Cloud DNS integration";
+  description = "Zero touch provisioning for VMs with DNS integration";
 
   outputs = { self, nixpkgs }:
     let
