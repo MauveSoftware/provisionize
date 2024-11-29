@@ -9,10 +9,10 @@ import (
 
 	"github.com/MauveSoftware/provisionize/pkg/api/proto"
 	"github.com/MauveSoftware/provisionize/pkg/clientutils"
+	"github.com/alecthomas/kingpin/v2"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 const version = "0.1.0"

@@ -14,12 +14,12 @@ import (
 	proxmox "github.com/MauveSoftware/provisionize/pkg/vm/proxox"
 
 	"contrib.go.opencensus.io/exporter/zipkin"
+	"github.com/alecthomas/kingpin/v2"
 	openzipkin "github.com/openzipkin/zipkin-go"
 	zipkinHTTP "github.com/openzipkin/zipkin-go/reporter/http"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"go.opencensus.io/trace"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 const version = "0.8.0"

@@ -11,10 +11,10 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/MauveSoftware/provisionize/pkg/api/proto"
 	"github.com/MauveSoftware/provisionize/pkg/clientutils"
+	"github.com/alecthomas/kingpin/v2"
 )
 
 const version = "0.5.0"

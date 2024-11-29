@@ -5,6 +5,7 @@ go 1.23
 require (
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
 	github.com/Telmate/proxmox-api-go v0.0.0-20241127232213-af1f4e86b570
+	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/czerwonk/ovirt_api v0.0.0-20190114183432-31037b874427
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
@@ -16,7 +17,6 @@ require (
 	golang.org/x/oauth2 v0.21.0
 	google.golang.org/api v0.189.0
 	google.golang.org/grpc v1.64.1
-	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -24,7 +24,6 @@ require (
 	cloud.google.com/go/auth v0.7.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.3 // indirect
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
-	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20231202071711-9a357b53e9c9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -35,6 +34,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
