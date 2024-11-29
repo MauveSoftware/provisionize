@@ -1,4 +1,4 @@
-{ pkgs, lib, buildGo122Module }:
+{ pkgs, lib, buildGo123Module }:
 
 buildGo123Module {
   pname = "provisionize";
