@@ -12,7 +12,7 @@ import (
 	"go.opencensus.io/trace"
 )
 
-const serviceName = "Proxmox"
+const serviceName = "PVE"
 
 // ProxmoxService is the service responsible for creating the virtual machine
 type ProxmoxService struct {
@@ -121,6 +121,12 @@ func (s *ProxmoxService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.Sta
 		},
 		CloudInit: &api.CloudInit{
 			NetworkInterfaces: s.networkConfig(vm),
+			Custom: &api.CloudInitCustom{
+				Network: &api.CloudInitSnippet{
+					FilePath: api.CloudInitSnippetPath(fmt.Sprintf("snippets/ci-network-%d.yml", id)),
+					Storage:  "local",
+				},
+			},
 		},
 		FullClone: pointer(1),
 	}
