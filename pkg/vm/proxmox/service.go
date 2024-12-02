@@ -100,7 +100,7 @@ func (s *ProxmoxService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.Sta
 
 	ch <- &proto.StatusUpdate{
 		ServiceName: serviceName,
-		Message:     "Creating VM by cloning from template",
+		Message:     "Creating VM by cloning template",
 	}
 
 	templateRef, err := s.cl.GetVmRefByName(vm.Template)
