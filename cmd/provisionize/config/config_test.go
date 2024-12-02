@@ -9,11 +9,6 @@ import (
 
 func TestLoad(t *testing.T) {
 	config := `listen_address: "[::]:1337"
-ovirt:
-  url: https://my-ovirt.instance
-  username: provisionize
-  password: allTheThings
-  template_path: /etc/provisionize/template
 proxmox:
   url: https://proxmox:8006/api2/json
   username: pve_prov
@@ -27,7 +22,6 @@ ansible_tower:
   password: magic
 templates:
   - name: linux
-    ovirt: ubuntu-18.04
     ansible_tower:
       - 1
       - 2
@@ -35,12 +29,6 @@ templates:
 `
 	expected := &Config{
 		ListenAddress: "[::]:1337",
-		Ovirt: &OvirtConfig{
-			Username:     "provisionize",
-			Password:     "allTheThings",
-			TemplatePath: "/etc/provisionize/template",
-			URL:          "https://my-ovirt.instance",
-		},
 		Proxmox: &ProxmoxConfig{
 			URL:      "https://proxmox:8006/api2/json",
 			Username: "pve_prov",
@@ -58,9 +46,7 @@ templates:
 		Templates: []*ProvisionTemplate{
 			{
 				Name:             "linux",
-				OvirtTemplate:    "ubuntu-18.04",
 				AnsibleTemplates: []uint{1, 2},
-				BootDiskName:     "new-disk",
 			},
 		},
 	}

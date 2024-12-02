@@ -14,3 +14,4 @@
 cmd/provisionize/provisionize
 cmd/provisionizer/provisionizer
 cmd/deprovisionizer/deprovisionizer
+main.go

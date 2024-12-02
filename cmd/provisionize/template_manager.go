@@ -18,22 +18,6 @@ func newTemplateManager(templates []*config.ProvisionTemplate) *templateManager 
 	return &templateManager{templates: m}
 }
 
-func (t *templateManager) OvirtTemplateNameForVM(vm *proto.VirtualMachine) string {
-	if template, found := t.templates[vm.Template]; found {
-		return template.OvirtTemplate
-	}
-
-	return ""
-}
-
-func (t *templateManager) BootDiskName(vm *proto.VirtualMachine) string {
-	if template, found := t.templates[vm.Template]; found {
-		return template.BootDiskName
-	}
-
-	return ""
-}
-
 func (t *templateManager) TowerTemplateIDsForVM(vm *proto.VirtualMachine) []uint {
 	if template, found := t.templates[vm.Template]; found {
 		return template.AnsibleTemplates

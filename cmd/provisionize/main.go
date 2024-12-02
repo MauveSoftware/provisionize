@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 
@@ -10,7 +9,6 @@ import (
 	"github.com/MauveSoftware/provisionize/pkg/configuration/tower"
 	"github.com/MauveSoftware/provisionize/pkg/dns/gclouddns"
 	"github.com/MauveSoftware/provisionize/pkg/server"
-	"github.com/MauveSoftware/provisionize/pkg/vm/ovirt"
 	"github.com/MauveSoftware/provisionize/pkg/vm/proxmox"
 
 	"contrib.go.opencensus.io/exporter/zipkin"
@@ -22,7 +20,7 @@ import (
 	"go.opencensus.io/trace"
 )
 
-const version = "0.8.0"
+const version = "0.8.2"
 
 func main() {
 	showVersion := kingpin.Flag("version", "Shows version info").Short('v').Bool()
@@ -44,7 +42,7 @@ func main() {
 
 	templateManager := newTemplateManager(cfg.Templates)
 	services := []server.ProvisionService{
-		virtualMachineService(cfg, templateManager),
+		proxmoxService(cfg),
 		googleCloudService(cfg),
 		ansibleTowerService(cfg, templateManager),
 	}
@@ -67,40 +65,16 @@ func loadConfig(configFile string) (*config.Config, error) {
 	return config.Load(f)
 }
 
-func virtualMachineService(cfg *config.Config, t *templateManager) server.ProvisionService {
-	if cfg.Ovirt != nil {
-		return ovirtService(cfg, t)
-	}
-
-	if cfg.Proxmox != nil {
-		return proxmoxService(cfg)
-	}
-
-	panic("no VM service configured")
-}
-
 func proxmoxService(cfg *config.Config) server.ProvisionService {
 	c := cfg.Proxmox
 
-	svc, err := proxmox.NewService(c.URL, c.Username, c.Password)
+	svc, err := proxmox.NewService(
+		c.URL,
+		c.Username,
+		c.Password,
+		c.NodeIP)
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "could not initialize Proxmox service"))
-	}
-
-	return svc
-}
-
-func ovirtService(cfg *config.Config, t *templateManager) server.ProvisionService {
-	c := cfg.Ovirt
-
-	template, err := ioutil.ReadFile(c.TemplatePath)
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "could not load template file"))
-	}
-
-	svc, err := ovirt.NewService(c.URL, c.Username, c.Password, string(template), t)
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "could not initialize oVirt service"))
 	}
 
 	return svc

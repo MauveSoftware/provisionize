@@ -10,6 +10,7 @@ import (
 	"github.com/MauveSoftware/provisionize/pkg/api/proto"
 	api "github.com/Telmate/proxmox-api-go/proxmox"
 	"go.opencensus.io/trace"
+	"golang.org/x/crypto/ssh"
 )
 
 const serviceName = "PVE"
@@ -19,10 +20,13 @@ type ProxmoxService struct {
 	cl              *api.Client
 	waitTimeout     time.Duration
 	pollingInterval time.Duration
+	user            string
+	pass            string
+	nodeIP          string
 }
 
 // NewService creates a new instance of ProxmoxService
-func NewService(url, user, pass string) (*ProxmoxService, error) {
+func NewService(url, user, pass, nodeIP string) (*ProxmoxService, error) {
 	timeout := 300 * time.Second
 
 	tlsConf := &tls.Config{InsecureSkipVerify: true}
@@ -31,7 +35,8 @@ func NewService(url, user, pass string) (*ProxmoxService, error) {
 		return nil, fmt.Errorf("could not connect: %w", err)
 	}
 
-	err = cl.Login(user, pass, "")
+	u := fmt.Sprintf("%s@pam", user)
+	err = cl.Login(u, pass, "")
 	if err != nil {
 		return nil, fmt.Errorf("could not authenticate: %w", err)
 	}
@@ -40,6 +45,9 @@ func NewService(url, user, pass string) (*ProxmoxService, error) {
 		cl:              cl,
 		waitTimeout:     timeout,
 		pollingInterval: 10 * time.Second,
+		user:            user,
+		pass:            pass,
+		nodeIP:          nodeIP,
 	}
 
 	return s, nil
@@ -58,6 +66,7 @@ func (s *ProxmoxService) Provision(ctx context.Context, vm *proto.VirtualMachine
 
 	ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "Waiting for VM initialization to complete"}
 	return s.waitForVMStatus(ref, "stopped", ch) &&
+		s.initNetworkConfig(ref.VmId(), ch) &&
 		s.startVM(ref, ch) &&
 		s.waitForVMStatus(ref, "running", ch)
 }
@@ -174,6 +183,45 @@ func (s *ProxmoxService) networkConfig(vm *proto.VirtualMachine) api.CloudInitNe
 	cfg[api.QemuNetworkInterfaceID0] = netCfg
 
 	return cfg
+}
+
+func (s *ProxmoxService) initNetworkConfig(id int, ch chan<- *proto.StatusUpdate) bool {
+	ch <- &proto.StatusUpdate{
+		ServiceName: serviceName,
+		Message:     "Prepare network config before first start",
+	}
+
+	config := &ssh.ClientConfig{
+		User: s.user,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(s.pass),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+
+	addr := fmt.Sprintf("%s:22", s.nodeIP)
+	sshCl, err := ssh.Dial("tcp", addr, config)
+	if err != nil {
+		err = fmt.Errorf("could not connect to node: %w", err)
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+		return false
+	}
+
+	sess, err := sshCl.NewSession()
+	if err != nil {
+		err = fmt.Errorf("could not create SSH session: %w", err)
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+		return false
+	}
+
+	cmd := fmt.Sprintf("/var/lib/vz/snippets/network-hookscript.pl %d init", id)
+	err = sess.Run(cmd)
+	if err != nil {
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+		return false
+	}
+
+	return true
 }
 
 func (s *ProxmoxService) waitForVMStatus(ref *api.VmRef, desiredStatus string, ch chan<- *proto.StatusUpdate) bool {

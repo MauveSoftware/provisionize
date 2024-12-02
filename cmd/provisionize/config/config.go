@@ -11,7 +11,6 @@ import (
 // Config represents the configuration
 type Config struct {
 	ListenAddress   string                `yaml:"listen_address"`
-	Ovirt           *OvirtConfig          `yaml:"ovirt"`
 	Proxmox         *ProxmoxConfig        `yaml:"proxmox"`
 	GooglecCloudDNS *GoogleCloudDNSConfig `yaml:"gcloud"`
 	AnsibleTower    *AnsibleTowerConfig   `yaml:"ansible_tower"`
@@ -21,17 +20,7 @@ type Config struct {
 // ProvisionTemplate represents a set of templates to apply for a certain template defined in VM
 type ProvisionTemplate struct {
 	Name             string `yaml:"name"`
-	OvirtTemplate    string `yaml:"ovirt"`
 	AnsibleTemplates []uint `yaml:"ansible_tower"`
-	BootDiskName     string `yaml:"boot_disk_name"`
-}
-
-// OvirtConfig represents the oVirt configuration part
-type OvirtConfig struct {
-	URL          string `yaml:"url"`
-	Username     string `yaml:"username"`
-	Password     string `yaml:"password"`
-	TemplatePath string `yaml:"template_path"`
 }
 
 // ProxmoxConfig represents the Proxmox configuration part
@@ -39,6 +28,7 @@ type ProxmoxConfig struct {
 	URL      string `yaml:"url"`
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
+	NodeIP   string `yaml:"node_ip"`
 }
 
 // GoogleCloudDNSConfig represents to DNS configuration part
