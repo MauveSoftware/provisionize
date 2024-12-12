@@ -35,12 +35,6 @@ func NewService(url, user, pass, nodeIP string) (*ProxmoxService, error) {
 		return nil, fmt.Errorf("could not connect: %w", err)
 	}
 
-	u := fmt.Sprintf("%s@pam", user)
-	err = cl.Login(u, pass, "")
-	if err != nil {
-		return nil, fmt.Errorf("could not authenticate: %w", err)
-	}
-
 	s := &ProxmoxService{
 		cl:              cl,
 		waitTimeout:     timeout,
@@ -57,6 +51,12 @@ func NewService(url, user, pass, nodeIP string) (*ProxmoxService, error) {
 func (s *ProxmoxService) Provision(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
 	ctx, span := trace.StartSpan(ctx, "ProxmoxService.Provision")
 	defer span.End()
+
+	err := s.login()
+	if err != nil {
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+		return false
+	}
 
 	ref, err := s.createVM(vm, ch)
 	if err != nil {
@@ -75,6 +75,12 @@ func (s *ProxmoxService) Provision(ctx context.Context, vm *proto.VirtualMachine
 func (s *ProxmoxService) Deprovision(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
 	ctx, span := trace.StartSpan(ctx, "ProxmoxService.Deprovision")
 	defer span.End()
+
+	err := s.login()
+	if err != nil {
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
+		return false
+	}
 
 	ref, err := s.cl.GetVmRefByName(vm.Name)
 	if err != nil {
@@ -99,6 +105,16 @@ func (s *ProxmoxService) Deprovision(ctx context.Context, vm *proto.VirtualMachi
 	}
 
 	return s.deleteVM(ref, ch)
+}
+
+func (s *ProxmoxService) login() error {
+	u := fmt.Sprintf("%s@pam", s.user)
+	err := s.cl.Login(u, s.pass, "")
+	if err != nil {
+		return fmt.Errorf("could not authenticate: %w", err)
+	}
+
+	return nil
 }
 
 func (s *ProxmoxService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) (*api.VmRef, error) {
