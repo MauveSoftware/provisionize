@@ -6,7 +6,6 @@ require (
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
 	github.com/Telmate/proxmox-api-go v0.0.0-20241127232213-af1f4e86b570
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/czerwonk/ovirt_api v0.0.0-20190114183432-31037b874427
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/openzipkin/zipkin-go v0.4.3
@@ -14,9 +13,10 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
 	go.opencensus.io v0.24.0
+	golang.org/x/crypto v0.30.0
 	golang.org/x/oauth2 v0.24.0
 	google.golang.org/api v0.209.0
-	google.golang.org/grpc v1.68.0
+	google.golang.org/grpc v1.70.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -39,12 +39,10 @@ require (
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
-	golang.org/x/crypto v0.29.0 // indirect
-	golang.org/x/net v0.31.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
-	golang.org/x/text v0.20.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20241118233622-e639e219e697 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241118233622-e639e219e697 // indirect
+	golang.org/x/net v0.32.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
 	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
