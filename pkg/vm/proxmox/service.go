@@ -66,7 +66,7 @@ func (s *ProxmoxService) Provision(ctx context.Context, vm *proto.VirtualMachine
 
 	ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "Waiting for VM initialization to complete"}
 	return s.waitForVMStatus(ref, "stopped", ch) &&
-		s.initNetworkConfig(ref.VmId(), ch) &&
+		s.initNetworkConfig(int(ref.VmId()), ch) &&
 		s.startVM(ref, ch) &&
 		s.waitForVMStatus(ref, "running", ch)
 }
@@ -82,7 +82,7 @@ func (s *ProxmoxService) Deprovision(ctx context.Context, vm *proto.VirtualMachi
 		return false
 	}
 
-	ref, err := s.cl.GetVmRefByName(vm.Name)
+	ref, err := s.cl.GetVmRefByName(ctx, vm.Name)
 	if err != nil {
 		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
 		return false
@@ -279,7 +279,6 @@ func (s *ProxmoxService) getVMStatus(ref *api.VmRef) (string, error) {
 
 func (s *ProxmoxService) startVM(ref *api.VmRef, ch chan<- *proto.StatusUpdate) bool {
 	exitStatus, err := s.cl.StartVm(ref)
-
 	if err != nil {
 		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error(), DebugMessage: exitStatus}
 		return false
@@ -291,7 +290,6 @@ func (s *ProxmoxService) startVM(ref *api.VmRef, ch chan<- *proto.StatusUpdate) 
 
 func (s *ProxmoxService) deleteVM(ref *api.VmRef, ch chan<- *proto.StatusUpdate) bool {
 	existStatus, err := s.cl.DeleteVm(ref)
-
 	if err != nil {
 		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error(), DebugMessage: existStatus}
 		return false
