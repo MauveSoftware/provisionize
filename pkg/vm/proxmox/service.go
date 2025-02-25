@@ -52,23 +52,23 @@ func (s *ProxmoxService) Provision(ctx context.Context, vm *proto.VirtualMachine
 	ctx, span := trace.StartSpan(ctx, "ProxmoxService.Provision")
 	defer span.End()
 
-	err := s.login()
+	err := s.login(ctx)
 	if err != nil {
 		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
 		return false
 	}
 
-	ref, err := s.createVM(vm, ch)
+	ref, err := s.createVM(ctx, vm, ch)
 	if err != nil {
 		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
 		return false
 	}
 
 	ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "Waiting for VM initialization to complete"}
-	return s.waitForVMStatus(ref, "stopped", ch) &&
+	return s.waitForVMStatus(ctx, ref, "stopped", ch) &&
 		s.initNetworkConfig(int(ref.VmId()), ch) &&
-		s.startVM(ref, ch) &&
-		s.waitForVMStatus(ref, "running", ch)
+		s.startVM(ctx, ref, ch) &&
+		s.waitForVMStatus(ctx, ref, "running", ch)
 }
 
 // Deprovision deletes the virtual machine
@@ -76,7 +76,7 @@ func (s *ProxmoxService) Deprovision(ctx context.Context, vm *proto.VirtualMachi
 	ctx, span := trace.StartSpan(ctx, "ProxmoxService.Deprovision")
 	defer span.End()
 
-	err := s.login()
+	err := s.login(ctx)
 	if err != nil {
 		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
 		return false
@@ -93,7 +93,7 @@ func (s *ProxmoxService) Deprovision(ctx context.Context, vm *proto.VirtualMachi
 		return true
 	}
 
-	status, err := s.getVMStatus(ref)
+	status, err := s.getVMStatus(ctx, ref)
 	if err != nil {
 		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
 		return false
@@ -104,12 +104,12 @@ func (s *ProxmoxService) Deprovision(ctx context.Context, vm *proto.VirtualMachi
 		return false
 	}
 
-	return s.deleteVM(ref, ch)
+	return s.deleteVM(ctx, ref, ch)
 }
 
-func (s *ProxmoxService) login() error {
+func (s *ProxmoxService) login(ctx context.Context) error {
 	u := fmt.Sprintf("%s@pam", s.user)
-	err := s.cl.Login(u, s.pass, "")
+	err := s.cl.Login(ctx, u, s.pass, "")
 	if err != nil {
 		return fmt.Errorf("could not authenticate: %w", err)
 	}
@@ -117,7 +117,7 @@ func (s *ProxmoxService) login() error {
 	return nil
 }
 
-func (s *ProxmoxService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) (*api.VmRef, error) {
+func (s *ProxmoxService) createVM(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) (*api.VmRef, error) {
 	id, err := strconv.Atoi(vm.Id)
 	if err != nil {
 		return nil, fmt.Errorf("ID has to be numeric")
@@ -128,12 +128,12 @@ func (s *ProxmoxService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.Sta
 		Message:     "Creating VM by cloning template",
 	}
 
-	templateRef, err := s.cl.GetVmRefByName(vm.Template)
+	templateRef, err := s.cl.GetVmRefByName(ctx, vm.Template)
 	if err != nil {
 		return nil, fmt.Errorf("could not get template: %w", err)
 	}
 
-	ref := api.NewVmRef(id)
+	ref := api.NewVmRef(api.GuestID(id))
 
 	config := &api.ConfigQemu{
 		Name: vm.Name,
@@ -156,7 +156,7 @@ func (s *ProxmoxService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.Sta
 		FullClone: pointer(1),
 	}
 
-	err = config.CloneVm(templateRef, ref, s.cl)
+	err = config.CloneVm(ctx, templateRef, ref, s.cl)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func (s *ProxmoxService) createVM(vm *proto.VirtualMachine, ch chan<- *proto.Sta
 		ServiceName: serviceName,
 		Message:     "Updating VM configuration",
 	}
-	_, err = config.Update(false, ref, s.cl)
+	_, err = config.Update(ctx, false, ref, s.cl)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +240,7 @@ func (s *ProxmoxService) initNetworkConfig(id int, ch chan<- *proto.StatusUpdate
 	return true
 }
 
-func (s *ProxmoxService) waitForVMStatus(ref *api.VmRef, desiredStatus string, ch chan<- *proto.StatusUpdate) bool {
+func (s *ProxmoxService) waitForVMStatus(ctx context.Context, ref *api.VmRef, desiredStatus string, ch chan<- *proto.StatusUpdate) bool {
 	currentStatus := ""
 
 	for {
@@ -250,7 +250,7 @@ func (s *ProxmoxService) waitForVMStatus(ref *api.VmRef, desiredStatus string, c
 			return false
 
 		case <-time.After(s.pollingInterval):
-			status, err := s.getVMStatus(ref)
+			status, err := s.getVMStatus(ctx, ref)
 			if err != nil {
 				ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
 				return false
@@ -268,8 +268,8 @@ func (s *ProxmoxService) waitForVMStatus(ref *api.VmRef, desiredStatus string, c
 	}
 }
 
-func (s *ProxmoxService) getVMStatus(ref *api.VmRef) (string, error) {
-	st, err := s.cl.GetVmState(ref)
+func (s *ProxmoxService) getVMStatus(ctx context.Context, ref *api.VmRef) (string, error) {
+	st, err := s.cl.GetVmState(ctx, ref)
 	if err != nil {
 		return "", err
 	}
@@ -277,8 +277,8 @@ func (s *ProxmoxService) getVMStatus(ref *api.VmRef) (string, error) {
 	return st["status"].(string), nil
 }
 
-func (s *ProxmoxService) startVM(ref *api.VmRef, ch chan<- *proto.StatusUpdate) bool {
-	exitStatus, err := s.cl.StartVm(ref)
+func (s *ProxmoxService) startVM(ctx context.Context, ref *api.VmRef, ch chan<- *proto.StatusUpdate) bool {
+	exitStatus, err := s.cl.StartVm(ctx, ref)
 	if err != nil {
 		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error(), DebugMessage: exitStatus}
 		return false
@@ -288,8 +288,8 @@ func (s *ProxmoxService) startVM(ref *api.VmRef, ch chan<- *proto.StatusUpdate) 
 	return true
 }
 
-func (s *ProxmoxService) deleteVM(ref *api.VmRef, ch chan<- *proto.StatusUpdate) bool {
-	existStatus, err := s.cl.DeleteVm(ref)
+func (s *ProxmoxService) deleteVM(ctx context.Context, ref *api.VmRef, ch chan<- *proto.StatusUpdate) bool {
+	existStatus, err := s.cl.DeleteVm(ctx, ref)
 	if err != nil {
 		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error(), DebugMessage: existStatus}
 		return false
