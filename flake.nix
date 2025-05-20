@@ -1,7 +1,8 @@
 {
   description = "Zero touch provisioning for VMs with DNS integration";
 
-  outputs = { self, nixpkgs }:
+  outputs =
+    { self, nixpkgs }:
     let
       forAllSystems = nixpkgs.lib.genAttrs [
         "x86_64-linux"
@@ -9,13 +10,16 @@
         "x86_64-darwin"
       ];
 
-      pkgsForSystem = system: (import nixpkgs {
-        inherit system;
-        overlays = [ self.overlays.default ];
-      });
+      pkgsForSystem =
+        system:
+        (import nixpkgs {
+          inherit system;
+          overlays = [ self.overlays.default ];
+        });
     in
     {
-      overlays.default = _final: prev:
+      overlays.default =
+        _final: prev:
         let
           inherit (prev) buildGo123Module callPackage lib;
         in
