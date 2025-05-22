@@ -15,7 +15,7 @@ require (
 	go.opencensus.io v0.24.0
 	golang.org/x/crypto v0.38.0
 	golang.org/x/oauth2 v0.30.0
-	google.golang.org/api v0.233.0
+	google.golang.org/api v0.234.0
 	google.golang.org/grpc v1.72.1
 	gopkg.in/yaml.v2 v2.4.0
 )
