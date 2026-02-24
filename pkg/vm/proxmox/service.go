@@ -30,7 +30,7 @@ func NewService(url, user, pass, nodeIP string) (*ProxmoxService, error) {
 	timeout := 300 * time.Second
 
 	tlsConf := &tls.Config{InsecureSkipVerify: true}
-	cl, err := api.NewClient(url, nil, "", tlsConf, "", int(timeout.Seconds()))
+	cl, err := api.NewClient(url, nil, "", tlsConf, "", int(timeout.Seconds()), false)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect: %w", err)
 	}
@@ -82,7 +82,7 @@ func (s *ProxmoxService) Deprovision(ctx context.Context, vm *proto.VirtualMachi
 		return false
 	}
 
-	ref, err := s.cl.GetVmRefByName(ctx, vm.Name)
+	ref, err := s.cl.GetVmRefByName(ctx, api.GuestName(vm.Name))
 	if err != nil {
 		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
 		return false
@@ -128,15 +128,17 @@ func (s *ProxmoxService) createVM(ctx context.Context, vm *proto.VirtualMachine,
 		Message:     "Creating VM by cloning template",
 	}
 
-	templateRef, err := s.cl.GetVmRefByName(ctx, vm.Template)
+	templateRef, err := s.cl.GetVmRefByName(ctx, api.GuestName(vm.Template))
 	if err != nil {
 		return nil, fmt.Errorf("could not get template: %w", err)
 	}
 
 	ref := api.NewVmRef(api.GuestID(id))
 
+	name := api.GuestName(vm.Name)
+
 	config := &api.ConfigQemu{
-		Name: vm.Name,
+		Name: &name,
 		CPU: &api.QemuCPU{
 			Sockets: pointer(api.QemuCpuSockets(1)),
 			Cores:   pointer(api.QemuCpuCores(vm.CpuCores)),
