@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
+
 	"net"
 	"strings"
 
@@ -29,7 +29,7 @@ type GoogleCloudDNSService struct {
 
 // NewDNSService creates a new instance of GoogleCloudDNSService
 func NewDNSService(projectID string, serviceAccountJSON io.Reader) (*GoogleCloudDNSService, error) {
-	b, err := ioutil.ReadAll(serviceAccountJSON)
+	b, err := io.ReadAll(serviceAccountJSON)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read credentials")
 	}

@@ -4,7 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
+
 	"net/http"
 	"strings"
 	"time"
@@ -233,7 +234,7 @@ func (s *TowerService) sendRequest(method, url, contentType, body string) (*apiR
 	}
 	defer resp.Body.Close()
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read from response")
 	}

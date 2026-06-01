@@ -3,6 +3,7 @@ package dns
 import (
 	"fmt"
 	"net"
+	"strings"
 )
 
 // ReverseDomain determines the reverse DNS domain for an IP address
@@ -16,28 +17,28 @@ func ReverseDomain(ip net.IP) string {
 
 // IPv4ReverseDomain determines the reverse DNS domain for an IPv4 address
 func IPv4ReverseDomain(ip net.IP) string {
-	str := ""
+	var str strings.Builder
 
 	for i := 3; i >= 0; i-- {
-		str += fmt.Sprintf("%d.", ip[i])
+		str.WriteString(fmt.Sprintf("%d.", ip[i]))
 	}
 
-	return str + "in-addr.arpa"
+	return str.String() + "in-addr.arpa"
 }
 
 // IPv6ReverseDomain determines the reverse DNS domain for an IPv6 address
 func IPv6ReverseDomain(ip net.IP) string {
-	str := ""
+	var str strings.Builder
 
 	for i := 15; i >= 0; i-- {
 		val := int(ip[i])
 		p := 16
-		for j := 0; j < 2; j++ {
-			str += fmt.Sprintf("%x.", val%p)
+		for range 2 {
+			str.WriteString(fmt.Sprintf("%x.", val%p))
 			val /= p
 			p *= 16
 		}
 	}
 
-	return str + "ip6.arpa"
+	return str.String() + "ip6.arpa"
 }

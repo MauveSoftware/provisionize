@@ -141,10 +141,10 @@ func (s *ProxmoxService) createVM(ctx context.Context, vm *proto.VirtualMachine,
 		Name: &name,
 		CPU: &api.QemuCPU{
 			Sockets: pointer(api.QemuCpuSockets(1)),
-			Cores:   pointer(api.QemuCpuCores(vm.CpuCores)),
+			Cores:   new(api.QemuCpuCores(vm.CpuCores)),
 		},
 		Memory: &api.QemuMemory{
-			CapacityMiB: pointer(api.QemuMemoryCapacity(vm.MemoryMb)),
+			CapacityMiB: new(api.QemuMemoryCapacity(vm.MemoryMb)),
 		},
 		CloudInit: &api.CloudInit{
 			NetworkInterfaces: s.networkConfig(vm),
@@ -155,7 +155,7 @@ func (s *ProxmoxService) createVM(ctx context.Context, vm *proto.VirtualMachine,
 				},
 			},
 		},
-		FullClone: pointer(1),
+		FullClone: new(1),
 	}
 
 	err = config.CloneVm(ctx, templateRef, ref, s.cl)
@@ -187,14 +187,14 @@ func (s *ProxmoxService) networkConfig(vm *proto.VirtualMachine) api.CloudInitNe
 	if vm.Ipv4 != nil {
 		addr := fmt.Sprintf("%s/%d", vm.Ipv4.Address, vm.Ipv4.PrefixLength)
 		netCfg.IPv4 = &api.CloudInitIPv4Config{
-			Address: pointer(api.IPv4CIDR(addr)),
+			Address: new(api.IPv4CIDR(addr)),
 		}
 	}
 
 	if vm.Ipv6 != nil {
 		addr := fmt.Sprintf("%s/%d", vm.Ipv6.Address, vm.Ipv6.PrefixLength)
 		netCfg.IPv6 = &api.CloudInitIPv6Config{
-			Address: pointer(api.IPv6CIDR(addr)),
+			Address: new(api.IPv6CIDR(addr)),
 		}
 	}
 
