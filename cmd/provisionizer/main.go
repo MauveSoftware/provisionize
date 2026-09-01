@@ -17,7 +17,7 @@ import (
 	"github.com/alecthomas/kingpin/v2"
 )
 
-const version = "0.5.0"
+const version = "0.9.0"
 
 var (
 	showVersion  = kingpin.Flag("version", "Shows version info").Short('v').Bool()

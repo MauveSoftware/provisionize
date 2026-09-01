@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const version = "0.1.0"
+const version = "0.9.0"
 
 var (
 	showVersion = kingpin.Flag("version", "Shows version info").Short('v').Bool()

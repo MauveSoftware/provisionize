@@ -20,7 +20,7 @@ import (
 	"go.opencensus.io/trace"
 )
 
-const version = "0.8.3"
+const version = "0.9.0"
 
 func main() {
 	showVersion := kingpin.Flag("version", "Shows version info").Short('v').Bool()
