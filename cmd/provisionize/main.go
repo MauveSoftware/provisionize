@@ -52,7 +52,9 @@ func main() {
 		log.Fatal(errors.Wrapf(err, "could not listen on %s", cfg.ListenAddress))
 	}
 
-	server.StartServer(list, services)
+	if err := server.StartServer(list, services); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func loadConfig(configFile string) (*config.Config, error) {
@@ -60,7 +62,11 @@ func loadConfig(configFile string) (*config.Config, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "could not open from config file")
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Error(err)
+		}
+	}()
 
 	return config.Load(f)
 }
@@ -85,7 +91,11 @@ func googleCloudService(cfg *config.Config) server.ProvisionService {
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "could not load Google Cloud credentials file"))
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Error(err)
+		}
+	}()
 
 	svc, err := gclouddns.NewDNSService(cfg.GooglecCloudDNS.ProjectID, f)
 	if err != nil {

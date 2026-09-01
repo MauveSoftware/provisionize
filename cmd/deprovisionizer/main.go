@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const version = "0.9.0"
@@ -54,11 +55,15 @@ func printVersion() {
 }
 
 func startDeprovisioning() (bool, error) {
-	conn, err := grpc.Dial(*apiAddress, grpc.WithInsecure())
+	conn, err := grpc.NewClient(*apiAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return false, errors.Wrap(err, "could not connect to service")
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Print(err)
+		}
+	}()
 
 	client := proto.NewProvisionizeServiceClient(conn)
 

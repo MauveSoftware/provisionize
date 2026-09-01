@@ -62,7 +62,7 @@ func completeAPIURL(url string) string {
 
 // Provision performs the required ansible playbook
 func (s *TowerService) Provision(ctx context.Context, vm *proto.VirtualMachine, ch chan<- *proto.StatusUpdate) bool {
-	ctx, span := trace.StartSpan(ctx, "TowerService.Provision")
+	_, span := trace.StartSpan(ctx, "TowerService.Provision")
 	defer span.End()
 
 	for _, id := range s.configService.TowerTemplateIDsForVM(vm) {
@@ -169,7 +169,7 @@ func (s *TowerService) waitForJobToComplete(job *Job, ch chan<- *proto.StatusUpd
 			}
 
 			if res.job.Status == "failed" {
-				s.pushStdOut(res.job.ID, ch)
+				_ = s.pushStdOut(res.job.ID, ch)
 				return res.debugMessage, errors.New("Failed running playbook")
 			}
 		}
@@ -232,7 +232,7 @@ func (s *TowerService) sendRequest(method, url, contentType, body string) (*apiR
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {

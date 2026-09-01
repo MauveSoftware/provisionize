@@ -20,7 +20,7 @@ func IPv4ReverseDomain(ip net.IP) string {
 	var str strings.Builder
 
 	for i := 3; i >= 0; i-- {
-		str.WriteString(fmt.Sprintf("%d.", ip[i]))
+		fmt.Fprintf(&str, "%d.", ip[i])
 	}
 
 	return str.String() + "in-addr.arpa"
@@ -34,7 +34,7 @@ func IPv6ReverseDomain(ip net.IP) string {
 		val := int(ip[i])
 		p := 16
 		for range 2 {
-			str.WriteString(fmt.Sprintf("%x.", val%p))
+			fmt.Fprintf(&str, "%x.", val%p)
 			val /= p
 			p *= 16
 		}

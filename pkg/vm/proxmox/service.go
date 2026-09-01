@@ -133,14 +133,13 @@ func (s *ProxmoxService) createVM(ctx context.Context, vm *proto.VirtualMachine,
 		return nil, fmt.Errorf("could not get template: %w", err)
 	}
 
-	ref := api.NewVmRef(api.GuestID(id))
-
+	guestID := api.GuestID(id)
 	name := api.GuestName(vm.Name)
 
 	config := &api.ConfigQemu{
 		Name: &name,
 		CPU: &api.QemuCPU{
-			Sockets: pointer(api.QemuCpuSockets(1)),
+			Sockets: new(api.QemuCpuSockets(1)),
 			Cores:   new(api.QemuCpuCores(vm.CpuCores)),
 		},
 		Memory: &api.QemuMemory{
@@ -155,10 +154,15 @@ func (s *ProxmoxService) createVM(ctx context.Context, vm *proto.VirtualMachine,
 				},
 			},
 		},
-		FullClone: new(1),
 	}
 
-	err = config.CloneVm(ctx, templateRef, ref, s.cl)
+	ref, err := templateRef.CloneQemu(ctx, api.CloneQemuTarget{
+		Full: &api.CloneQemuFull{
+			Node: templateRef.Node(),
+			ID:   &guestID,
+			Name: &name,
+		},
+	}, s.cl)
 	if err != nil {
 		return nil, err
 	}
@@ -167,8 +171,7 @@ func (s *ProxmoxService) createVM(ctx context.Context, vm *proto.VirtualMachine,
 		ServiceName: serviceName,
 		Message:     "Updating VM configuration",
 	}
-	_, err = config.Update(ctx, false, ref, s.cl)
-	if err != nil {
+	if err := s.cl.New().QemuGuest.Update(ctx, *ref, false, false, *config); err != nil {
 		return nil, err
 	}
 
@@ -271,32 +274,36 @@ func (s *ProxmoxService) waitForVMStatus(ctx context.Context, ref *api.VmRef, de
 }
 
 func (s *ProxmoxService) getVMStatus(ctx context.Context, ref *api.VmRef) (string, error) {
-	st, err := s.cl.GetVmState(ctx, ref)
+	st, err := ref.GetRawGuestStatus(ctx, s.cl)
 	if err != nil {
 		return "", err
 	}
 
-	return st["status"].(string), nil
+	return st.GetState().String(), nil
 }
 
 func (s *ProxmoxService) startVM(ctx context.Context, ref *api.VmRef, ch chan<- *proto.StatusUpdate) bool {
-	exitStatus, err := s.cl.StartVm(ctx, ref)
+	err := s.cl.New().Guest.Start(ctx, *ref)
 	if err != nil {
-		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error(), DebugMessage: exitStatus}
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
 		return false
 	}
 
-	ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "VM started", DebugMessage: exitStatus}
+	ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "VM started"}
 	return true
 }
 
 func (s *ProxmoxService) deleteVM(ctx context.Context, ref *api.VmRef, ch chan<- *proto.StatusUpdate) bool {
-	existStatus, err := s.cl.DeleteVm(ctx, ref)
+	existed, err := s.cl.New().Guest.Delete(ctx, *ref)
 	if err != nil {
-		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error(), DebugMessage: existStatus}
+		ch <- &proto.StatusUpdate{ServiceName: serviceName, Failed: true, Message: err.Error()}
 		return false
 	}
 
-	ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: "VM deletion initiated", DebugMessage: existStatus}
+	msg := "VM deletion initiated"
+	if !existed {
+		msg = "VM did not exist"
+	}
+	ch <- &proto.StatusUpdate{ServiceName: serviceName, Message: msg}
 	return true
 }

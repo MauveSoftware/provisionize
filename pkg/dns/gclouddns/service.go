@@ -17,6 +17,7 @@ import (
 	"go.opencensus.io/trace"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/dns/v1"
+	"google.golang.org/api/option"
 )
 
 const serviceName = "Google Cloud DNS"
@@ -40,7 +41,7 @@ func NewDNSService(projectID string, serviceAccountJSON io.Reader) (*GoogleCloud
 		return nil, errors.Wrap(err, "failed get credentials from JSON file")
 	}
 
-	service, err := dns.New(cfg.Client(ctx))
+	service, err := dns.NewService(ctx, option.WithHTTPClient(cfg.Client(ctx)))
 	if err != nil {
 		return nil, errors.Wrap(err, "could not initialize DNS service")
 	}
@@ -114,7 +115,7 @@ func (s *GoogleCloudDNSService) Deprovision(ctx context.Context, vm *proto.Virtu
 }
 
 func (s *GoogleCloudDNSService) listZones(ctx context.Context) ([]*dns.ManagedZone, error) {
-	ctx, span := trace.StartSpan(ctx, "GoogleCloudDNSService.listZones")
+	_, span := trace.StartSpan(ctx, "GoogleCloudDNSService.listZones")
 	defer span.End()
 
 	resp, err := s.service.ManagedZones.List(s.projectID).Do()
@@ -126,7 +127,7 @@ func (s *GoogleCloudDNSService) listZones(ctx context.Context) ([]*dns.ManagedZo
 }
 
 func (s *GoogleCloudDNSService) ensureHostRecordsExists(ctx context.Context, vm *proto.VirtualMachine, zones []*dns.ManagedZone, ch chan<- *proto.StatusUpdate) error {
-	ctx, span := trace.StartSpan(ctx, "GoogleCloudDNSService.ensureHostRecordsExists")
+	_, span := trace.StartSpan(ctx, "GoogleCloudDNSService.ensureHostRecordsExists")
 	defer span.End()
 
 	z, err := s.zoneForFQDN(vm.Fqdn, zones, ch)
@@ -155,7 +156,7 @@ func (s *GoogleCloudDNSService) ensureHostRecordsExists(ctx context.Context, vm 
 }
 
 func (s *GoogleCloudDNSService) ensureHostRecordsAbsent(ctx context.Context, vm *proto.VirtualMachine, zones []*dns.ManagedZone, ch chan<- *proto.StatusUpdate) error {
-	ctx, span := trace.StartSpan(ctx, "GoogleCloudDNSService.ensureHostRecordsAbsent")
+	_, span := trace.StartSpan(ctx, "GoogleCloudDNSService.ensureHostRecordsAbsent")
 	defer span.End()
 
 	z, err := s.zoneForFQDN(vm.Fqdn, zones, ch)
@@ -205,7 +206,7 @@ func (s *GoogleCloudDNSService) zoneForFQDN(fqdn string, zones []*dns.ManagedZon
 
 func (s *GoogleCloudDNSService) ensurePTRRecordsExists(ctx context.Context, vm *proto.VirtualMachine, zones []*dns.ManagedZone,
 	ch chan<- *proto.StatusUpdate) error {
-	ctx, span := trace.StartSpan(ctx, "GoogleCloudDNSService.ensurePTRRecordsExists")
+	_, span := trace.StartSpan(ctx, "GoogleCloudDNSService.ensurePTRRecordsExists")
 	defer span.End()
 
 	name := s.hostDNSName(vm)
@@ -244,7 +245,7 @@ func (s *GoogleCloudDNSService) ensurePTRRecordExists(addr string, value string,
 
 func (s *GoogleCloudDNSService) ensurePTRRecordsAbsent(ctx context.Context, vm *proto.VirtualMachine, zones []*dns.ManagedZone,
 	ch chan<- *proto.StatusUpdate) error {
-	ctx, span := trace.StartSpan(ctx, "GoogleCloudDNSService.ensurePTRRecordsAbsent")
+	_, span := trace.StartSpan(ctx, "GoogleCloudDNSService.ensurePTRRecordsAbsent")
 	defer span.End()
 
 	name := s.hostDNSName(vm)
@@ -255,7 +256,9 @@ func (s *GoogleCloudDNSService) ensurePTRRecordsAbsent(ctx context.Context, vm *
 	}
 
 	for _, ip := range ips {
-		s.ensurePTRRecordAbsent(ip, name, zones, ch)
+		if err := s.ensurePTRRecordAbsent(ip, name, zones, ch); err != nil {
+			return err
+		}
 	}
 
 	return nil

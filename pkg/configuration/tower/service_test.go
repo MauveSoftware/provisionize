@@ -63,14 +63,18 @@ func TestProvision(t *testing.T) {
 				if r.Method == "GET" {
 					if strings.HasSuffix(r.URL.Path, "/jobs/1") {
 						w.WriteHeader(http.StatusOK)
-						w.Write([]byte(`{"id":1, "status":"successful"}`))
+						if _, err := w.Write([]byte(`{"id":1, "status":"successful"}`)); err != nil {
+							t.Fatal(err)
+						}
 					} else {
 						w.WriteHeader(http.StatusNotFound)
 					}
 
 					if strings.HasPrefix(r.URL.Path, "stdout?format=txt") {
 						w.WriteHeader(http.StatusOK)
-						w.Write([]byte("All done!"))
+						if _, err := w.Write([]byte("All done!")); err != nil {
+							t.Fatal(err)
+						}
 					}
 
 					return
@@ -82,7 +86,9 @@ func TestProvision(t *testing.T) {
 				}
 
 				w.WriteHeader(test.statusCodes[call-1])
-				w.Write([]byte(`{"id":1}`))
+				if _, err := w.Write([]byte(`{"id":1}`)); err != nil {
+					t.Fatal(err)
+				}
 			}
 
 			s := httptest.NewServer(http.HandlerFunc(handler))

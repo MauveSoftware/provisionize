@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/MauveSoftware/provisionize/pkg/api/proto"
 	"github.com/MauveSoftware/provisionize/pkg/clientutils"
@@ -65,11 +66,15 @@ func printVersion() {
 }
 
 func startProvisioning() (bool, error) {
-	conn, err := grpc.Dial(*apiAddress, grpc.WithInsecure())
+	conn, err := grpc.NewClient(*apiAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return false, errors.Wrap(err, "could not connect to service")
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Print(err)
+		}
+	}()
 
 	client := proto.NewProvisionizeServiceClient(conn)
 
