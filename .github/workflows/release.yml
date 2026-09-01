@@ -1,4 +1,4 @@
-name: Nix Flake
+name: Release
 
 on:
   push:
@@ -10,4 +10,4 @@ permissions:
 
 jobs:
   release:
-    uses: czerwonk/go-ci/.github/workflows/update-flake.yml@v4
+    uses: czerwonk/go-ci/.github/workflows/release.yml@v4
