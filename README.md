@@ -1,5 +1,3 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/mauvesoftware/provisionize)](https://goreportcard.com/report/github.com/mauvesoftware/provisionize)
-
 # provisionize
 Zero touch provisioning for VMs with DNS integration
 
