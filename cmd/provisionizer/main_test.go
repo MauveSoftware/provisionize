@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"net"
 	"testing"
 
@@ -24,9 +25,10 @@ func TestRequestFromParameters(t *testing.T) {
 	*cores = 2
 	*memory = 2048
 
-	req := requestFromParameters()
+	req, err := requestFromParameters()
+	assert.NoError(t, err, "requestFromParameters should not fail for valid flag values")
 
-	_, err := uuid.Parse(req.RequestId)
+	_, err = uuid.Parse(req.RequestId)
 	assert.NoError(t, err, "request ID should be a valid UUID")
 
 	assert.Equal(t, &proto.VirtualMachine{
@@ -48,4 +50,31 @@ func TestRequestFromParameters(t *testing.T) {
 		Name:     "test-vm",
 		Template: "ubuntu-18-04",
 	}, req.VirtualMachine)
+}
+
+func TestUint32FromFlag(t *testing.T) {
+	tests := []struct {
+		name        string
+		value       uint
+		expectError bool
+	}{
+		{name: "in range", value: 4096},
+		{name: "exceeds uint32", value: math.MaxUint32 + 1, expectError: true},
+	}
+
+	t.Parallel()
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			v, err := uint32FromFlag("cores", test.value)
+
+			if test.expectError {
+				assert.Error(t, err, "expected an error for value %d", test.value)
+				return
+			}
+
+			assert.NoError(t, err, "did not expect an error for value %d", test.value)
+			assert.Equal(t, uint32(test.value), v)
+		})
+	}
 }

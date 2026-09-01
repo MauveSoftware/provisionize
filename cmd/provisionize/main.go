@@ -58,7 +58,7 @@ func main() {
 }
 
 func loadConfig(configFile string) (*config.Config, error) {
-	f, err := os.Open(configFile)
+	f, err := os.Open(configFile) // #nosec G304 -- configFile is a local operator-supplied CLI flag, not attacker-controlled input
 	if err != nil {
 		return nil, errors.Wrap(err, "could not open from config file")
 	}

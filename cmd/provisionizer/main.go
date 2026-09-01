@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"os"
 
 	"github.com/google/uuid"
@@ -78,7 +79,11 @@ func startProvisioning() (bool, error) {
 
 	client := proto.NewProvisionizeServiceClient(conn)
 
-	req := requestFromParameters()
+	req, err := requestFromParameters()
+	if err != nil {
+		return false, err
+	}
+
 	stream, err := client.Provisionize(context.Background(), req)
 	if err != nil {
 		return false, errors.Wrap(err, "error on provisionize call")
@@ -102,27 +107,56 @@ func startProvisioning() (bool, error) {
 	}
 }
 
-func requestFromParameters() *proto.ProvisionizeRequest {
+func requestFromParameters() (*proto.ProvisionizeRequest, error) {
+	cpuCores, err := uint32FromFlag("cores", *cores)
+	if err != nil {
+		return nil, err
+	}
+
+	memoryMb, err := uint32FromFlag("memory", *memory)
+	if err != nil {
+		return nil, err
+	}
+
+	ipv4PfxLenVal, err := uint32FromFlag("ipv4-pfx-len", *ipv4PfxLen)
+	if err != nil {
+		return nil, err
+	}
+
+	ipv6PfxLenVal, err := uint32FromFlag("ipv6-pfx-len", *ipv6PfxLen)
+	if err != nil {
+		return nil, err
+	}
+
 	return &proto.ProvisionizeRequest{
 		RequestId: uuid.New().String(),
 		VirtualMachine: &proto.VirtualMachine{
 			ClusterName: *clusterName,
-			CpuCores:    uint32(*cores),
+			CpuCores:    cpuCores,
 			Id:          *id,
 			Fqdn:        *fqdn,
 			Ipv4: &proto.IPConfig{
 				Address:      (*ipv4).String(),
-				PrefixLength: uint32(*ipv4PfxLen),
+				PrefixLength: ipv4PfxLenVal,
 				Gateway:      (*ipv4Gateway).String(),
 			},
 			Ipv6: &proto.IPConfig{
 				Address:      (*ipv6).String(),
-				PrefixLength: uint32(*ipv6PfxLen),
+				PrefixLength: ipv6PfxLenVal,
 				Gateway:      (*ipv6Gateway).String(),
 			},
-			MemoryMb: uint32(*memory),
+			MemoryMb: memoryMb,
 			Name:     *vmName,
 			Template: *templateName,
 		},
+	}, nil
+}
+
+// uint32FromFlag converts a uint flag value to uint32, rejecting values that would overflow.
+func uint32FromFlag(flagName string, v uint) (uint32, error) {
+	if v > math.MaxUint32 {
+		return 0, fmt.Errorf("--%s must not exceed %d", flagName, uint32(math.MaxUint32))
 	}
+
+	return uint32(v), nil // #nosec G115 -- v is range-checked above
 }

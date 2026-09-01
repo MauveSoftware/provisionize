@@ -29,7 +29,7 @@ type ProxmoxService struct {
 func NewService(url, user, pass, nodeIP string) (*ProxmoxService, error) {
 	timeout := 300 * time.Second
 
-	tlsConf := &tls.Config{InsecureSkipVerify: true}
+	tlsConf := &tls.Config{InsecureSkipVerify: true} // #nosec G402 -- Proxmox instances are typically deployed with self-signed certificates
 	cl, err := api.NewClient(url, nil, "", tlsConf, "", int(timeout.Seconds()), false)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect: %w", err)
@@ -122,6 +122,13 @@ func (s *ProxmoxService) createVM(ctx context.Context, vm *proto.VirtualMachine,
 	if err != nil {
 		return nil, fmt.Errorf("ID has to be numeric")
 	}
+	if id < api.GuestIdMinimum || id > api.GuestIdMaximum {
+		return nil, fmt.Errorf("ID must be between %d and %d", api.GuestIdMinimum, api.GuestIdMaximum)
+	}
+
+	if vm.CpuCores < 1 || vm.CpuCores > 128 {
+		return nil, fmt.Errorf("CPU cores must be between 1 and 128")
+	}
 
 	ch <- &proto.StatusUpdate{
 		ServiceName: serviceName,
@@ -133,14 +140,14 @@ func (s *ProxmoxService) createVM(ctx context.Context, vm *proto.VirtualMachine,
 		return nil, fmt.Errorf("could not get template: %w", err)
 	}
 
-	guestID := api.GuestID(id)
+	guestID := api.GuestID(id) // #nosec G115 -- id is range-checked above
 	name := api.GuestName(vm.Name)
 
 	config := &api.ConfigQemu{
 		Name: &name,
 		CPU: &api.QemuCPU{
 			Sockets: new(api.QemuCpuSockets(1)),
-			Cores:   new(api.QemuCpuCores(vm.CpuCores)),
+			Cores:   new(api.QemuCpuCores(vm.CpuCores)), // #nosec G115 -- vm.CpuCores is range-checked above
 		},
 		Memory: &api.QemuMemory{
 			CapacityMiB: new(api.QemuMemoryCapacity(vm.MemoryMb)),
@@ -217,7 +224,7 @@ func (s *ProxmoxService) initNetworkConfig(id int, ch chan<- *proto.StatusUpdate
 		Auth: []ssh.AuthMethod{
 			ssh.Password(s.pass),
 		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // #nosec G106 -- connects to a fixed, operator-configured Proxmox node; host key is not currently pinned
 	}
 
 	addr := fmt.Sprintf("%s:22", s.nodeIP)
