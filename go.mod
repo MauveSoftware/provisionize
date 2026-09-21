@@ -16,7 +16,7 @@ require (
 	golang.org/x/crypto v0.57.0
 	golang.org/x/oauth2 v0.37.0
 	google.golang.org/api v0.297.0
-	google.golang.org/grpc v1.83.2
+	google.golang.org/grpc v1.84.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
