@@ -1,6 +1,6 @@
 module github.com/MauveSoftware/provisionize
 
-go 1.26.6
+go 1.26.9
 
 require (
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
