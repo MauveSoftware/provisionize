@@ -30,7 +30,7 @@ func NewService(url, user, pass, nodeIP string) (*ProxmoxService, error) {
 	timeout := 300 * time.Second
 
 	tlsConf := &tls.Config{InsecureSkipVerify: true} // #nosec G402 -- Proxmox instances are typically deployed with self-signed certificates
-	cl, err := api.NewClient(url, nil, "", tlsConf, "", int(timeout.Seconds()), false)
+	cl, err := api.NewClient(url, nil, "", tlsConf, "", int(timeout.Seconds()), nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect: %w", err)
 	}
