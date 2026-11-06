@@ -15,7 +15,7 @@ require (
 	go.opencensus.io v0.24.0
 	golang.org/x/crypto v0.58.0
 	golang.org/x/oauth2 v0.37.0
-	google.golang.org/api v0.308.0
+	google.golang.org/api v0.310.0
 	google.golang.org/grpc v1.85.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -31,8 +31,8 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/s2a-go v0.1.11 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.3.23 // indirect
-	github.com/googleapis/gax-go/v2 v2.26.2 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.24 // indirect
+	github.com/googleapis/gax-go/v2 v2.27.0 // indirect
 	github.com/xhit/go-str2duration/v2 v2.2.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0 // indirect
