@@ -13,7 +13,7 @@ require (
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stretchr/testify v1.12.1
 	go.opencensus.io v0.24.0
-	golang.org/x/crypto v0.58.0
+	golang.org/x/crypto v0.59.0
 	golang.org/x/oauth2 v0.38.0
 	google.golang.org/api v0.311.0
 	google.golang.org/grpc v1.85.0
@@ -42,8 +42,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/net v0.62.0 // indirect
-	golang.org/x/sys v0.49.0 // indirect
-	golang.org/x/text v0.43.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20261026165753-2ffab32bce7e // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
