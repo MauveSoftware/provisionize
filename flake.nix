@@ -21,10 +21,10 @@
       overlays.default =
         _final: prev:
         let
-          inherit (prev) buildGo123Module callPackage lib;
+          inherit (prev) buildGo127Module callPackage lib;
         in
         {
-          provisionize = callPackage ./package.nix { inherit buildGo123Module lib; };
+          provisionize = callPackage ./package.nix { inherit buildGo127Module lib; };
         };
 
       packages = forAllSystems (system: rec {

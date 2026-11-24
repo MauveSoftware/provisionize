@@ -12,4 +12,4 @@ permissions:
 
 jobs:
   update-flake:
-    uses: czerwonk/go-ci/.github/workflows/update-flake.yml@v5
+    uses: czerwonk/go-ci/.github/workflows/update-flake.yml@v6

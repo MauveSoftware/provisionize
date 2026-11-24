@@ -1,10 +1,10 @@
 {
   pkgs,
   lib,
-  buildGo123Module,
+  buildGo127Module,
 }:
 
-buildGo123Module {
+buildGo127Module {
   pname = "provisionize";
   version = "0.8.3";
 
